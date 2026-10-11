@@ -76,8 +76,16 @@ if [ "${SKIP_PREGEN:-0}" != "1" ] && [ ! -f "$PRE/.complete" ]; then
       "$PY" -m pip install -q "sherpa-onnx==$V" numpy scipy imageio-ffmpeg 2>/dev/null || \
       "$PY" -m pip install -q --break-system-packages "sherpa-onnx==$V" numpy scipy imageio-ffmpeg || true
     if "$PY" -c "import sherpa_onnx, numpy, scipy, imageio_ffmpeg" 2>/dev/null; then
+      W="$CACHE/whisper-small"
+      if [ ! -s "$W/small-encoder.int8.onnx" ]; then
+        echo "تنزيل نموذج التحقق من صحة النطق (مرة واحدة)…"
+        if dl "$GH/asr-models/sherpa-onnx-whisper-small.tar.bz2" "$CACHE/whisper-small.tar.bz2"; then
+          mkdir -p "$W" && tar xjf "$CACHE/whisper-small.tar.bz2" -C "$W" --strip-components=1 --wildcards '*.int8.onnx' '*-tokens.txt' || true
+        fi
+        rm -f "$CACHE/whisper-small.tar.bz2"
+      fi
       echo "توليد الأصوات الجاهزة (حدّ ${PREGEN_MINUTES:-25} دقيقة في هذا البناء)…"
-      "$PY" tools/pregen.py --steps "${PREGEN_STEPS:-8}" --budget-min "${PREGEN_MINUTES:-25}" || { echo "تعذّر توليد الأصوات الجاهزة؛ سيُولَّد الصوت وقت التشغيل."; echo "pregen failed" > "$PRE/.failed"; }
+      "$PY" tools/pregen.py --steps "${PREGEN_STEPS:-8}" --budget-min "${PREGEN_MINUTES:-25}" --asr-dir "$W" || { echo "تعذّر توليد الأصوات الجاهزة؛ سيُولَّد الصوت وقت التشغيل."; echo "pregen failed" > "$PRE/.failed"; }
     else
       echo "تعذّر تثبيت sherpa-onnx لبايثون؛ سيُولَّد الصوت وقت التشغيل. (احذف $PRE/.failed لإعادة المحاولة)"; echo "pip failed" > "$PRE/.failed"
     fi

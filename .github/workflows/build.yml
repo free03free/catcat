@@ -43,3 +43,10 @@ jobs:
         with:
           name: talking-cat-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+      - name: Upload pronunciation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pack-report
+          path: pack-report.txt
+          if-no-files-found: ignore
