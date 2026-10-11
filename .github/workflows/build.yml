@@ -4,7 +4,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 350
     steps:
       - uses: actions/checkout@v4
       - name: Restore root files if missing
@@ -19,18 +19,26 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.11.1'
-      - name: Cache engine and voice pack
-        uses: actions/cache@v4
+      - name: Restore engine and voice pack cache
+        uses: actions/cache/restore@v4
         with:
           path: ~/.cache/talking-cat-engine
-          key: cat-engine-${{ hashFiles('fetch-engine.sh', 'tools/lessons.json', 'tools/pregen.py') }}
+          key: cat-engine-v2-${{ github.run_number }}
+          restore-keys: |
+            cat-engine-v2-
       - name: Build debug APK
         env:
-          PREGEN_MINUTES: '120'
+          PREGEN_MINUTES: '270'
           PREGEN_STEPS: '8'
         run: |
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           gradle --no-daemon -Dorg.gradle.jvmargs=-Xmx3g assembleDebug
+      - name: Save engine and voice pack cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/talking-cat-engine
+          key: cat-engine-v2-${{ github.run_number }}
       - uses: actions/upload-artifact@v4
         with:
           name: talking-cat-apk

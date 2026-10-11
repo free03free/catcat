@@ -17,7 +17,7 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
     // نماذج الصوت كبيرة: بلا ضغط لتسريع البناء والنسخ
-    androidResources { noCompress 'onnx', 'ort', 'json', 'mp4' }
+    androidResources { noCompress 'onnx', 'ort', 'json', 'mp4', 'm4a' }
     lint { checkReleaseBuilds false; abortOnError false }
 }
 

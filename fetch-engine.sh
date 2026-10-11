@@ -66,22 +66,22 @@ PC="$CACHE/tts-pre"
 if [ "${SKIP_PREGEN:-0}" != "1" ] && [ ! -f "$PRE/.complete" ]; then
   mkdir -p "$PRE" "$PC"
   # استرجاع ما وُلّد سابقًا (مثلًا بعد إعادة استيراد المشروع)
-  [ -f "$PC/index.json" ] && cp -a "$PC"/. "$PRE"/
+  [ -d "$PC/v0" ] && cp -a "$PC"/. "$PRE"/
   rm -f "$PRE/.failed"
   PY=$(command -v python3 || command -v python || true)
   if [ -z "$PY" ]; then
     echo "بايثون غير موجود: سيُولَّد الصوت وقت التشغيل بدل الحزمة الجاهزة."; echo "no python" > "$PRE/.failed"
   else
-    "$PY" -c "import sherpa_onnx, numpy, scipy" 2>/dev/null || \
-      "$PY" -m pip install -q "sherpa-onnx==$V" numpy scipy 2>/dev/null || \
-      "$PY" -m pip install -q --break-system-packages "sherpa-onnx==$V" numpy scipy || true
-    if "$PY" -c "import sherpa_onnx, numpy, scipy" 2>/dev/null; then
+    "$PY" -c "import sherpa_onnx, numpy, scipy, imageio_ffmpeg" 2>/dev/null || \
+      "$PY" -m pip install -q "sherpa-onnx==$V" numpy scipy imageio-ffmpeg 2>/dev/null || \
+      "$PY" -m pip install -q --break-system-packages "sherpa-onnx==$V" numpy scipy imageio-ffmpeg || true
+    if "$PY" -c "import sherpa_onnx, numpy, scipy, imageio_ffmpeg" 2>/dev/null; then
       echo "توليد الأصوات الجاهزة (حدّ ${PREGEN_MINUTES:-25} دقيقة في هذا البناء)…"
-      "$PY" tools/pregen.py --voice 9 --steps "${PREGEN_STEPS:-8}" --budget-min "${PREGEN_MINUTES:-25}" || { echo "تعذّر توليد الأصوات الجاهزة؛ سيُولَّد الصوت وقت التشغيل."; echo "pregen failed" > "$PRE/.failed"; }
+      "$PY" tools/pregen.py --steps "${PREGEN_STEPS:-8}" --budget-min "${PREGEN_MINUTES:-25}" || { echo "تعذّر توليد الأصوات الجاهزة؛ سيُولَّد الصوت وقت التشغيل."; echo "pregen failed" > "$PRE/.failed"; }
     else
       echo "تعذّر تثبيت sherpa-onnx لبايثون؛ سيُولَّد الصوت وقت التشغيل. (احذف $PRE/.failed لإعادة المحاولة)"; echo "pip failed" > "$PRE/.failed"
     fi
   fi
   # حفظ نسخة في الكاش (بدون ملفات العلامات)
-  cp -a "$PRE"/*.pcm "$PRE"/index.json "$PC"/ 2>/dev/null || true
+  cp -a "$PRE"/v[0-9] "$PC"/ 2>/dev/null || true
 fi

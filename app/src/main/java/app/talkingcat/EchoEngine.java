@@ -304,40 +304,97 @@ final class EchoEngine {
     }
 
     // ===== الحزمة المضمّنة في التطبيق (assets/tts-pre): تُولَّد على الحاسوب بـ tools/pregen.py =====
-    private volatile org.json.JSONObject preItems = null;
-    private volatile int preVoice = -1, preRate = 22050;
-    private volatile boolean preLoaded = false;
+    // الحزمة الجاهزة: لكل صوت مجلد tts-pre/v<رقم>/ فيه index.json وملفات m4a (AAC) تُفكّ عند الطلب
+    private final java.util.HashMap<Integer, org.json.JSONObject> preIdx = new java.util.HashMap<>();
+    private final java.util.HashSet<Integer> preMissing = new java.util.HashSet<>();
 
-    private synchronized void loadPre() {
-        if (preLoaded) return;
-        preLoaded = true;
-        try (java.io.InputStream in = ctx.getAssets().open("tts-pre/index.json")) {
+    private synchronized org.json.JSONObject preFor(int v) {
+        org.json.JSONObject o = preIdx.get(v);
+        if (o != null) return o;
+        if (preMissing.contains(v)) return null;
+        try (java.io.InputStream in = ctx.getAssets().open("tts-pre/v" + v + "/index.json")) {
             java.io.ByteArrayOutputStream bo = new java.io.ByteArrayOutputStream();
             byte[] buf = new byte[8192]; int n; while ((n = in.read(buf)) > 0) bo.write(buf, 0, n);
-            org.json.JSONObject j = new org.json.JSONObject(bo.toString("UTF-8"));
-            preVoice = j.optInt("voice", 0); preRate = j.optInt("rate", 22050);
-            preItems = j.getJSONObject("items");
-            try { java.util.Iterator<String> it = preItems.keys(); if (it.hasNext()) { try (java.io.InputStream t0 = ctx.getAssets().open("tts-pre/" + preItems.getString(it.next()))) { t0.read(); } } } catch (Throwable missing) { preItems = null; }
-        } catch (Throwable ignored) { preItems = null; }
+            o = new org.json.JSONObject(bo.toString("UTF-8")).getJSONObject("items");
+            preIdx.put(v, o); return o;
+        } catch (Throwable t) { preMissing.add(v); return null; }
     }
 
     private static String preKey(String text, float speed) { return Math.round(speed * 100) + "|" + text; }
 
     private boolean hasPre(String text, float speed) {
-        loadPre();
-        return preItems != null && voiceId == preVoice && preItems.has(preKey(text, speed));
+        org.json.JSONObject o = preFor(voiceId);
+        return o != null && o.has(preKey(text, speed));
     }
 
     private Clip readPre(String text, float speed) {
-        if (!hasPre(text, speed)) return null;
-        try (java.io.InputStream in = ctx.getAssets().open("tts-pre/" + preItems.getString(preKey(text, speed)))) {
-            java.io.ByteArrayOutputStream bo = new java.io.ByteArrayOutputStream();
-            byte[] buf = new byte[16384]; int n; while ((n = in.read(buf)) > 0) bo.write(buf, 0, n);
-            byte[] b = bo.toByteArray();
-            float[] o = new float[b.length / 2];
-            for (int i = 0; i < o.length; i++) o[i] = (short) ((b[2 * i] & 255) | (b[2 * i + 1] << 8)) / 32767f;
-            return o.length == 0 ? null : new Clip(o, preRate);
-        } catch (Throwable t) { return null; }
+        org.json.JSONObject o = preFor(voiceId);
+        if (o == null) return null;
+        String k = preKey(text, speed);
+        if (!o.has(k)) return null;
+        return decodeAsset("tts-pre/v" + voiceId + "/" + o.optString(k));
+    }
+
+    /** يفكّ ملف m4a/AAC من الـ assets إلى عيّنات float (صوت أحادي). */
+    private Clip decodeAsset(String path) {
+        android.media.MediaExtractor ex = new android.media.MediaExtractor();
+        android.media.MediaCodec codec = null;
+        try (android.content.res.AssetFileDescriptor afd = ctx.getAssets().openFd(path)) {
+            ex.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
+            android.media.MediaFormat fmt = null; int track = -1;
+            for (int i = 0; i < ex.getTrackCount(); i++) {
+                android.media.MediaFormat f = ex.getTrackFormat(i);
+                String mime = f.getString(android.media.MediaFormat.KEY_MIME);
+                if (mime != null && mime.startsWith("audio/")) { fmt = f; track = i; break; }
+            }
+            if (track < 0) return null;
+            ex.selectTrack(track);
+            codec = android.media.MediaCodec.createDecoderByType(fmt.getString(android.media.MediaFormat.KEY_MIME));
+            codec.configure(fmt, null, null, 0);
+            codec.start();
+            int sr = fmt.getInteger(android.media.MediaFormat.KEY_SAMPLE_RATE);
+            int ch = fmt.containsKey(android.media.MediaFormat.KEY_CHANNEL_COUNT) ? fmt.getInteger(android.media.MediaFormat.KEY_CHANNEL_COUNT) : 1;
+            short[] buf = new short[sr * 3]; int len = 0;
+            android.media.MediaCodec.BufferInfo bi = new android.media.MediaCodec.BufferInfo();
+            boolean inDone = false, outDone = false; int guard = 0;
+            while (!outDone && guard++ < 20000) {
+                if (!inDone) {
+                    int ii = codec.dequeueInputBuffer(10000);
+                    if (ii >= 0) {
+                        java.nio.ByteBuffer ib = codec.getInputBuffer(ii);
+                        int n = ex.readSampleData(ib, 0);
+                        if (n < 0) { codec.queueInputBuffer(ii, 0, 0, 0, android.media.MediaCodec.BUFFER_FLAG_END_OF_STREAM); inDone = true; }
+                        else { codec.queueInputBuffer(ii, 0, n, ex.getSampleTime(), 0); ex.advance(); }
+                    }
+                }
+                int oi = codec.dequeueOutputBuffer(bi, 10000);
+                if (oi >= 0) {
+                    if (bi.size > 0) {
+                        java.nio.ByteBuffer ob = codec.getOutputBuffer(oi);
+                        ob.position(bi.offset); ob.limit(bi.offset + bi.size);
+                        java.nio.ShortBuffer sb = ob.order(java.nio.ByteOrder.nativeOrder()).asShortBuffer();
+                        int frames = sb.remaining() / Math.max(1, ch);
+                        if (len + frames > buf.length) buf = java.util.Arrays.copyOf(buf, Math.max(buf.length * 2, len + frames));
+                        for (int f = 0; f < frames; f++) buf[len++] = sb.get(f * Math.max(1, ch));
+                    }
+                    codec.releaseOutputBuffer(oi, false);
+                    if ((bi.flags & android.media.MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) outDone = true;
+                } else if (oi == android.media.MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
+                    android.media.MediaFormat of = codec.getOutputFormat();
+                    if (of.containsKey(android.media.MediaFormat.KEY_SAMPLE_RATE)) sr = of.getInteger(android.media.MediaFormat.KEY_SAMPLE_RATE);
+                    if (of.containsKey(android.media.MediaFormat.KEY_CHANNEL_COUNT)) ch = of.getInteger(android.media.MediaFormat.KEY_CHANNEL_COUNT);
+                }
+            }
+            if (len == 0) return null;
+            float[] o = new float[len];
+            for (int i = 0; i < len; i++) o[i] = buf[i] / 32768f;
+            return new Clip(o, sr);
+        } catch (Throwable t) {
+            return null;
+        } finally {
+            try { if (codec != null) { codec.stop(); codec.release(); } } catch (Throwable ignored) {}
+            try { ex.release(); } catch (Throwable ignored) {}
+        }
     }
 
     private void writeDisk(String key, float[] smp, int rate) {
@@ -395,18 +452,26 @@ final class EchoEngine {
         bg.execute(() -> {
             try {
                 housekeeping();
-                final int total = texts.length; int doneN = 0;
+                int missing = 0;
+                for (int i = 0; i < texts.length; i++) {
+                    String c0 = clean(texts[i]);
+                    if (c0.isEmpty()) continue;
+                    float sp0 = Math.max(0.6f, Math.min(1.3f, speeds[i]));
+                    if (!isCached(keyOf(c0, sp0), c0, sp0)) missing++;
+                }
+                if (missing == 0) return;
+                final int total = missing; int doneN = 0;
                 cb.emit("packprog", "0/" + total);
                 for (int i = 0; i < texts.length && my == prefetchGen.get(); i++) {
                     while (my == prefetchGen.get() && (fgBusy.get() > 0 || System.currentTimeMillis() - lastFg < 1500)) Thread.sleep(300);
                     if (!canSpeak()) return;
                     String c = clean(texts[i]);
-                    if (!c.isEmpty()) {
-                        float sp = Math.max(0.6f, Math.min(1.3f, speeds[i]));
-                        if (!isCached(keyOf(c, sp), c, sp)) synthBuiltin(c, sp);
-                    }
+                    if (c.isEmpty()) continue;
+                    float sp = Math.max(0.6f, Math.min(1.3f, speeds[i]));
+                    if (isCached(keyOf(c, sp), c, sp)) continue;
+                    synthBuiltin(c, sp);
                     doneN++;
-                    if (doneN % 4 == 0 || doneN == total) cb.emit("packprog", doneN + "/" + total);
+                    if (doneN % 2 == 0 || doneN >= total) cb.emit("packprog", Math.min(doneN, total) + "/" + total);
                 }
             } catch (Throwable ignored) {}
         });
