@@ -140,3 +140,38 @@
 .quiz-prompt{cursor:pointer;min-height:44px;margin:4px 0 8px;line-height:1.5}
 .quiz-option{font-size:26px}
 .lesson-box h3{font-size:16px;line-height:1.7;color:#6b574a}
+
+.pad-host{position:relative;width:240px;height:240px;margin:10px auto;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);direction:ltr;touch-action:none;user-select:none;-webkit-user-select:none;background:#faf4ec;border-radius:24px;border:2px solid #e7d3b9}
+.pad-host[hidden]{display:none}
+.pad-dot{display:grid;place-items:center;pointer-events:none}
+.pad-dot::before{content:"";width:22px;height:22px;border-radius:50%;background:#c9b49a;transition:transform .15s,background .15s}
+.pad-dot.on::before{background:#f39c12;transform:scale(1.5)}
+.pad-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.pad-svg polyline{fill:none;stroke:#f39c12;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;opacity:.75}
+
+/* ===== إعدادات بتصميم أنظف: بطاقات وصفوف ومفاتيح تبديل ===== */
+.panel .settings-tabs{background:#f2eee9;padding:4px;border-radius:16px;margin:4px 0 14px;gap:4px;top:56px}
+.panel .settings-tab{background:transparent;color:#7a6657;border-radius:12px;padding:10px 2px;font-size:15px}
+.panel .settings-tab.active{background:#fff;color:#d9770a;box-shadow:0 2px 6px #0002}
+.panel .sec{background:#fffaf3;border:1px solid #f0e2d0;border-radius:18px;padding:4px 14px 14px;margin:0 0 12px}
+.panel .sec-t{font-weight:900;font-size:16px;color:#594536;padding:12px 0 2px}
+.panel .srow{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0;padding:12px 0;border-bottom:1px solid #f0e2d0;font-weight:800}
+.panel .sec .srow:last-child{border-bottom:0}
+.panel .st b{display:block;font-size:16px}
+.panel .st small{display:block;font-weight:600;color:#8a7767;font-size:13px;margin-top:2px}
+.panel .sfield{display:block;margin:12px 0 4px;font-weight:800}
+.panel .sfield select,.panel .sfield>input[type=text]{margin-top:6px}
+.panel .rl{display:flex;justify-content:space-between;align-items:center}
+.panel .rl output{background:#fde6c8;color:#b45f06;border-radius:99px;padding:2px 12px;font-size:14px}
+.panel input.sw{-webkit-appearance:none;appearance:none;width:52px!important;height:30px;margin:0!important;padding:0;border:0;border-radius:99px;background:#d9cfc4;position:relative;flex:none;transition:background .2s}
+.panel input.sw::after{content:"";position:absolute;top:3px;right:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #0004;transition:transform .2s}
+.panel input.sw:checked{background:#f3a044}
+.panel input.sw:checked::after{transform:translateX(-22px)}
+.panel .stepper{display:flex;direction:ltr;align-items:center;gap:6px;flex:none}
+.panel .stepper button{width:40px;height:40px;border:0;border-radius:50%;background:#f3a044;color:#fff;font-size:24px;font-weight:900;line-height:1;padding:0}
+.panel .stepper input{width:74px;margin:0;padding:8px 4px;text-align:center;font-size:20px;font-weight:900;border-radius:12px}
+.panel .chips{display:flex;gap:8px;flex-wrap:wrap;padding-top:10px}
+.panel .chips button{border:0;border-radius:99px;padding:7px 16px;background:#f2e6d4;color:#594536;font-weight:800;font-size:14px}
+.panel .chips button.on{background:#f3a044;color:#fff}
+.panel .gate-btns{margin-top:10px}
+#reset-all{background:transparent!important;color:#b04a4a;border:1.5px solid #ecc9c9;margin-top:6px}
