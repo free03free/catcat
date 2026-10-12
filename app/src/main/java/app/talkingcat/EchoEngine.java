@@ -327,12 +327,35 @@ final class EchoEngine {
         return o != null && o.has(preKey(text, speed));
     }
 
+    private final java.util.LinkedHashMap<String, Clip> preClips =
+        new java.util.LinkedHashMap<String, Clip>(128, 0.75f, true) {
+            @Override protected boolean removeEldestEntry(java.util.Map.Entry<String, Clip> e) { return size() > 120; }
+        };
+
     private Clip readPre(String text, float speed) {
         org.json.JSONObject o = preFor(voiceId);
         if (o == null) return null;
         String k = preKey(text, speed);
         if (!o.has(k)) return null;
-        return decodeAsset("tts-pre/v" + voiceId + "/" + o.optString(k));
+        String ck = voiceId + "|" + k;
+        synchronized (preClips) { Clip h = preClips.get(ck); if (h != null) return h; }
+        Clip c = decodeAsset("tts-pre/v" + voiceId + "/" + o.optString(k));
+        if (c != null) synchronized (preClips) { preClips.put(ck, c); }
+        return c;
+    }
+
+    /** يفكّ مقاطع اللعبة مسبقًا في الذاكرة فيصير النطق فوريًا. */
+    void warm(final String[] texts, final float[] speeds) {
+        new Thread(() -> {
+            for (int i = 0; i < texts.length; i++) {
+                try {
+                    String c = clean(texts[i]);
+                    if (c.isEmpty()) continue;
+                    float sp = Math.max(0.6f, Math.min(1.3f, speeds[i]));
+                    readPre(c, sp);
+                } catch (Throwable ignored) {}
+            }
+        }, "tts-warm").start();
     }
 
     /** يفكّ ملف m4a/AAC من الـ assets إلى عيّنات float (صوت أحادي). */

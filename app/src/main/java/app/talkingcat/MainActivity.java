@@ -68,6 +68,15 @@ public class MainActivity extends Activity {
         @JavascriptInterface public void setSystemVoice(boolean on) { engine.setUseSystem(on); }
         @JavascriptInterface public void setVoice(int v) { engine.setVoice(v); }
         @JavascriptInterface public void setSteps(int v) { engine.setSteps(v); }
+        @JavascriptInterface public void stop() { engine.stop(); }
+        @JavascriptInterface public void warm(String json) {
+            try {
+                org.json.JSONArray a = new org.json.JSONArray(json);
+                String[] t = new String[a.length()]; float[] sp = new float[a.length()];
+                for (int i = 0; i < a.length(); i++) { org.json.JSONArray it = a.getJSONArray(i); t[i] = it.getString(0); sp[i] = (float) it.getDouble(1); }
+                engine.warm(t, sp);
+            } catch (Throwable ignored) {}
+        }
         @JavascriptInterface public void prefetch(String json) {
             try {
                 org.json.JSONArray a = new org.json.JSONArray(json);
@@ -119,6 +128,11 @@ public class MainActivity extends Activity {
         if(s.endsWith(".jpg")||s.endsWith(".jpeg"))return"image/jpeg";
         if(s.endsWith(".svg"))return"image/svg+xml";
         return"application/octet-stream";
+    }
+    @Override public void onBackPressed() {
+        web.evaluateJavascript("(window.gamesBack&&window.gamesBack())?1:0", v -> {
+            if (!"1".equals(v)) finish();
+        });
     }
     @Override protected void onPause(){ engine.stop(); web.onPause(); super.onPause(); }
     @Override protected void onResume(){super.onResume();web.onResume();}
