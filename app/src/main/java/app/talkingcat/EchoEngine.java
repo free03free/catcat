@@ -450,6 +450,7 @@ final class EchoEngine {
         Clip d = readDisk(key);
         if (d != null) { synchronized (cache) { cache.put(key, d); } return d; }
         GeneratedAudio a;
+        float[] syllable = null;   // مقطع (بَ، أَبْ، بَا): يُقتطع من جملة حاملة كما في tools/pregen.py
         genLock.lock();
         try {
             synchronized (cache) { Clip hit = cache.get(key); if (hit != null) return hit; }
@@ -457,12 +458,20 @@ final class EchoEngine {
             GenerationConfig g = new GenerationConfig();
             g.setSid(voiceId); g.setSpeed(speed); g.setNumSteps(steps);
             HashMap<String, String> ex = new HashMap<>(); ex.put("lang", "ar"); g.setExtra(ex);
-            a = t.generateWithConfig(text, g);
+            if (SyllableCutter.isSyllable(text)) {
+                // النموذج ينطق المقطع المنفرد بشكل رديء؛ نولّد «حرف بَ، كرر: بَ» ونأخذ آخر مقطع فقط
+                GeneratedAudio ca = t.generateWithConfig(SyllableCutter.carrier(text), g);
+                float[] raw = ca == null ? null : ca.getSamples();
+                if (raw != null && raw.length > 0) syllable = SyllableCutter.cutLast(raw, ca.getSampleRate());
+                a = syllable != null ? ca : t.generateWithConfig(text, g);   // فشل الاقتطاع: نولّد المقطع وحده
+            } else {
+                a = t.generateWithConfig(text, g);
+            }
         } finally { genLock.unlock(); }
         float[] smp = a == null ? null : a.getSamples();
         if (smp == null || smp.length == 0) return null;
         int rate = a.getSampleRate();
-        Clip c = new Clip(trim(smp, rate), rate);
+        Clip c = new Clip(syllable != null ? syllable : trim(smp, rate), rate);
         synchronized (cache) { cache.put(key, c); }
         if (lessonTexts.contains(text)) writeDisk(key, c.s, c.rate);
         return c;

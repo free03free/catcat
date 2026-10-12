@@ -11,14 +11,11 @@ if(!Number.isFinite(learningVolume)||learningVolume<0)learningVolume=90;
 if(learningVolume>100)learningVolume=100;
 let volumeLevel=learningVolume;
 if(!Number.isFinite(speechSpeed))speechSpeed=0.9;
-let features=Object.assign({harakat:false,madd:false,words:false,quiz:false},JSON.parse(localStorage.getItem(FEATURE_KEY)||"{}"));
+let features=Object.assign({harakat:true,madd:true,words:true,quiz:true},JSON.parse(localStorage.getItem(FEATURE_KEY)||"{}"));
 let selectedNumber=1,selectedLetter=0,selectedColor=0,quizAnswer="",quizActive=false;
 let heard="",pokes=0,pokeT=0,idleAt=Date.now(),talkDog=0;
 pushNativePrefs();
-const letters=[
- ["أ","أَلِف"],["ب","بَاء"],["ت","تَاء"],["ث","ثَاء"],["ج","جِيم"],["ح","حَاء"],["خ","خَاء"],["د","دَال"],["ذ","ذَال"],["ر","رَاء"],["ز","زَاي"],["س","سِين"],["ش","شِين"],["ص","صَاد"],["ض","ضَاد"],["ط","طَاء"],["ظ","ظَاء"],["ع","عَيْن"],["غ","غَيْن"],["ف","فَاء"],["ق","قَاف"],["ك","كَاف"],["ل","لَام"],["م","مِيم"],["ن","نُون"],["ه","هَاء"],["و","وَاو"],["ي","يَاء"]
-];
-const colors=[["أَحْمَر","#e74c3c"],["أَزْرَق","#3498db"],["أَصْفَر","#f1c40f"],["أَخْضَر","#2ecc71"],["بُرْتُقَالِي","#f39c12"],["بَنَفْسَجِي","#9b59b6"],["وَرْدِي","#ff7aa2"],["بُنِّي","#8b5a2b"],["أَسْوَد","#222"],["أَبْيَض","#fff"],["رَمَادِي","#95a5a6"],["ذَهَبِي","#d4ac0d"]];
+const {letters,colors,lessonWords,numberWord,ones,tens,words:LETTER_WORDS,SAY:LS_SAY,harakat:mkHarakat,madds:mkMadds,sylKind}=window.CatSpeech; // المصدر الوحيد للنصوص: speech-data.js
 const $=id=>document.getElementById(id);
 function showSpeech(t){const s2=$("speech2");if(s2)s2.textContent=t}
 const catEls=()=>[$("cat2")];
@@ -59,29 +56,25 @@ function startIdle(){
   if(idle>45000){catSet("sleep",true);return}
   const a=["earL","earR","yawn","swing"][Math.floor(Math.random()*4)];catOnce(a,a==="swing"?1300:900)
  },5500)}
-function ones(n){return ["","وَاحِد","اِثْنَان","ثَلَاثَة","أَرْبَعَة","خَمْسَة","سِتَّة","سَبْعَة","ثَمَانِيَة","تِسْعَة"][n]}
-function tens(n){return ["","عَشَرَة","عِشْرُون","ثَلَاثُون","أَرْبَعُون","خَمْسُون","سِتُّون","سَبْعُون","ثَمَانُون","تِسْعُون"][n]}
-function numberWord(n){if(n<10)return ones(n);if(n===10)return "عَشَرَة";if(n===11)return "أَحَدَ عَشَر";if(n===12)return "اِثْنَا عَشَر";if(n<20)return ones(n-10)+"َ عَشَر";if(n<100){let u=n%10,t=Math.floor(n/10);return u?ones(u)+" وَ"+tens(t):tens(t)}if(n===100)return "مِئَة";if(n<200)return "مِئَة وَ"+numberWord(n-100);if(n<1000){let h=Math.floor(n/100),r=n%100,hw=["","","مِئَتَان","ثَلَاثُمِئَة","أَرْبَعُمِئَة","خَمْسُمِئَة","سِتُّمِئَة","سَبْعُمِئَة","ثَمَانِمِئَة","تِسْعُمِئَة"][h];return r?hw+" وَ"+numberWord(r):hw}if(n===1000)return "أَلْف";return String(n)}
 function renderNumbers(){const g=$("number-grid");g.innerHTML="";for(let n=1;n<=maxNumber;n++){const b=document.createElement("button");b.className="number"+(n===selectedNumber?" selected":"");b.textContent=n;b.onclick=()=>{selectedNumber=n;document.querySelectorAll(".number").forEach(x=>x.classList.remove("selected"));b.classList.add("selected");talk(numberWord(n));};g.appendChild(b)}}
 function currentLetter(){return letters[selectedLetter][0]}
 const spd=k=>Math.max(.6,Math.min(1.2,speechSpeed*k));
 // يحدد النص المنطوق وسرعته لكل عنصر تعليمي؛ نفس الدالة تُستعمل للنطق وللتجهيز المسبق كي يتطابق المخزَّن مع المطلوب
 function learnArgs(text){
- const t=String(text||"");
- if(/^[ء-ي][َُِْ]$/.test(t))return[t,spd(.8)];
- if(/^[ء-ي][اوي]$/.test(t))return[t,spd(.84)];
+ const t=LS_SAY[String(text||"")]||String(text||""),k=sylKind(t);
+ if(k==="short")return[t,spd(.8)];
+ if(k==="madd")return[t,spd(.84)];
  return[t,spd(.91)];
 }
 function speakLearning(text){const a=learnArgs(text);return talk(a[0],a[1])}
 function prefetchAll(){
  if(!window.TomNative||!TomNative.prefetch)return;
  const items=[],seen=new Set(),add=(t,sp)=>{const k=t+"|"+sp;if(!seen.has(k)){seen.add(k);items.push([t,Number(sp.toFixed(3))])}};
- const wordMap={"ب":["بَاب","بَيْت","بَطَّة"],"ر":["رُمَّان","رَأْس","رِيشَة"],"م":["مَاء","مُوز","مَلِك"],"ت":["تِين","تُوت","تَمْر"],"س":["سَمَك","سُوق","سَيْف"],"ن":["نُور","نَار","نَمْل"],"ك":["كِتَاب","كُرَة","كَلْب"]};
  const order=letters.map((_,i)=>i);order.sort((a,b)=>(a===selectedLetter?-1:b===selectedLetter?1:a-b));
  order.forEach(i=>{const l=letters[i][0];
   const la=learnArgs(letters[i][1]);add(la[0],la[1]);
-  [l+"َ",l+"ِ",l+"ُ",l+"ْ",l+"ا",l+"و",l+"ي"].forEach(x=>{const a=learnArgs(x);add(a[0],a[1])});
-  (wordMap[l]||[l+"َاب",l+"ِي",l+"ُو"]).forEach(x=>{const a=learnArgs(x);add(a[0],a[1])});
+  mkHarakat(l).concat(mkMadds(l)).forEach(x=>{const a=learnArgs(x[0]);add(a[0],a[1])});
+  LETTER_WORDS[i].forEach(x=>{const a=learnArgs(x);add(a[0],a[1])});
  });
  colors.forEach(c=>add(c[0],speechSpeed));
  try{for(let n=1;n<=Math.min(maxNumber,1000);n++)add(numberWord(n),speechSpeed)}catch(e){}
@@ -92,27 +85,24 @@ function prefetchAll(){
  try{TomNative.prefetch(JSON.stringify(items))}catch(e){}
 }
 let prefetchT=null;function schedulePrefetch(){clearTimeout(prefetchT);prefetchT=setTimeout(prefetchAll,1800)}
-function addMini(parent,text,extra){const b=document.createElement("button");b.className="mini-item"+(extra?" "+extra:"");b.textContent=text;b.onclick=()=>speakLearning(text);parent.appendChild(b);return b}
+function addMini(parent,text,extra,label){const b=document.createElement("button");b.type="button";b.className="mini-item"+(extra?" "+extra:"");const t=document.createElement("span");t.className="mi-t";t.textContent=text;b.appendChild(t);if(label){const s=document.createElement("small");s.className="mi-l";s.textContent=label;b.appendChild(s);b.setAttribute("aria-label",label+" "+text)}b.onclick=()=>speakLearning(text);parent.appendChild(b);return b}
 function renderLetterLessons(){
- const l=currentLetter(), h=$("harakat-grid"),m=$("madd-grid"),w=$("word-grid");h.innerHTML="";m.innerHTML="";w.innerHTML="";
- [[l+"َ","فَتْحَة"],[l+"ِ","كِسْرَة"],[l+"ُ","ضَمَّة"],[l+"ْ","سُكُون"]].forEach(x=>addMini(h,x[0]));
- [[l+"ا","مَدٌّ بِالأَلِف"],[l+"و","مَدٌّ بِالْوَاو"],[l+"ي","مَدٌّ بِالْيَاءِ"]].forEach(x=>addMini(m,x[0]));
- 
- const wordMap={"ب":["بَاب","بَيْت","بَطَّة"],"ر":["رُمَّان","رَأْس","رِيشَة"],"م":["مَاء","مُوز","مَلِك"],"ت":["تِين","تُوت","تَمْر"],"س":["سَمَك","سُوق","سَيْف"],"ن":["نُور","نَار","نَمْل"],"ك":["كِتَاب","كُرَة","كَلْب"]};
- (wordMap[l]||[l+"َاب",l+"ِي",l+"ُو"]).forEach(x=>{const b=addMini(w,x);b.classList.add("word-item")});
+ const l=currentLetter(),i=selectedLetter,h=$("harakat-grid"),m=$("madd-grid"),w=$("word-grid");h.innerHTML="";m.innerHTML="";w.innerHTML="";
+ const hk=mkHarakat(l),md=mkMadds(l);
+ hk.forEach(x=>addMini(h,x[0],"",x[1]));md.forEach(x=>addMini(m,x[0],"",x[1]));
+ LETTER_WORDS[i].forEach(x=>{const b=addMini(w,x);b.classList.add("word-item")});
+ h.parentElement.querySelector("h3").textContent="الحركات: "+hk.map(x=>x[0]).join("  ");
+ m.parentElement.querySelector("h3").textContent="المدود: "+md.map(x=>x[0]).join("  ");
+ quizActive=false;quizAnswer="";$("quiz-options").innerHTML="";$("quiz-prompt").textContent="اضغط «ابدأ» ثم استمع واختر ما سمعت.";
  $("harakat-grid").parentElement.hidden=!features.harakat;$("madd-grid").parentElement.hidden=!features.madd;$("word-grid").parentElement.hidden=!features.words;$("start-quiz").parentElement.hidden=!features.quiz;
 }
 function renderLetters(){const g=$("letter-grid");g.innerHTML="";letters.forEach((x,i)=>{const b=document.createElement("button");b.className="letter"+(i===selectedLetter?" selected":"");b.textContent=x[0];b.onclick=()=>{selectedLetter=i;document.querySelectorAll(".letter").forEach(y=>y.classList.remove("selected"));b.classList.add("selected");$("letter-detail").textContent=x[0]+" — "+x[1];renderLetterLessons();speakLearning(x[1]);};g.appendChild(b)});$("letter-detail").textContent=letters[0][0]+" — "+letters[0][1];renderLetterLessons()}
 function renderColors(){const g=$("color-grid");g.innerHTML="";colors.forEach((x,i)=>{const b=document.createElement("button");b.className="color-card"+(i===selectedColor?" selected":"");b.innerHTML='<div class="swatch" style="background:'+x[1]+'"></div>'+x[0];b.onclick=()=>{selectedColor=i;document.querySelectorAll(".color-card").forEach(y=>y.classList.remove("selected"));b.classList.add("selected");talk(x[0]);};g.appendChild(b)})}
-function startQuiz(){const pool=["بَ","بِ","بُ","بْ","با","بو","بي","رَ","رِ","رُ","را","رو","ري"];quizAnswer=pool[Math.floor(Math.random()*pool.length)];quizActive=true;$("quiz-prompt").textContent="استمع جيدًا ثم اختر ما سمعت.";{const a=learnArgs(quizAnswer);talk(a[0],a[1])};const options=$("quiz-options");options.innerHTML="";const set=[quizAnswer];while(set.length<4){const x=pool[Math.floor(Math.random()*pool.length)];if(!set.includes(x))set.push(x)}set.sort(()=>Math.random()-0.5);set.forEach(x=>{const b=document.createElement("button");b.className="quiz-option";b.textContent=x;b.onclick=()=>{if(!quizActive)return;if(x===quizAnswer){b.classList.add("correct");$("quiz-prompt").textContent="أحسنت! ⭐ إجابة صحيحة";talk("أَحْسَنْتَ",0.72)}else{b.classList.add("wrong");$("quiz-prompt").textContent="حاول مرة أخرى 🔄";}};options.appendChild(b)})}
+function startQuiz(){const l=currentLetter(),pool=mkHarakat(l).concat(mkMadds(l)).map(x=>x[0]);quizAnswer=pool[Math.floor(Math.random()*pool.length)];quizActive=true;$("quiz-prompt").textContent="استمع جيدًا ثم اختر ما سمعت. (اضغط هنا لتسمع مرة أخرى)";{const a=learnArgs(quizAnswer);talk(a[0],a[1])}const options=$("quiz-options");options.innerHTML="";const set=[quizAnswer];while(set.length<4){const x=pool[Math.floor(Math.random()*pool.length)];if(!set.includes(x))set.push(x)}set.sort(()=>Math.random()-0.5);set.forEach(x=>{const b=document.createElement("button");b.type="button";b.className="quiz-option";b.textContent=x;b.onclick=()=>{if(!quizActive||b.classList.contains("wrong"))return;if(x===quizAnswer){quizActive=false;b.classList.add("correct");$("quiz-prompt").textContent="أحسنت! ⭐ إجابة صحيحة";talk("أَحْسَنْتَ",0.9)}else{b.classList.add("wrong");$("quiz-prompt").textContent="حاول مرة أخرى 🔄";const a=learnArgs(quizAnswer);talk(a[0],a[1])}};options.appendChild(b)})}
+function replayQuiz(){if(quizActive&&quizAnswer){const a=learnArgs(quizAnswer);talk(a[0],a[1])}}
 function speakCurrent(){const t=document.querySelector(".tab.active"),p=t?t.dataset.page:"numbers";if(p==="numbers")talk(numberWord(selectedNumber));else if(p==="letters")speakLearning(letters[selectedLetter][1]);else talk(colors[selectedColor][0])}
 // ===== الوضع الثالث: وضع الدروس (حرف + صورة + كلمة) =====
 const LS_KEY="lessonSeen";
-const lessonWords=[
- ["أَسَد","🦁"],["بَقَرَة","🐄"],["تَمْر","svg:tamr"],["ثَعْلَب","🦊"],["جَمَل","🐪"],["حِصَان","🐎"],["خَرُوف","🐑"],["دُبّ","svg:bear"],["ذُرَة","🌽"],["رُمَّان","svg:rumman"],
- ["زَرَافَة","🦒"],["سَمَكَة","🐟"],["شَمْس","🌞"],["صَارُوخ","🚀"],["ضِفْدَع","🐸"],["طَائِر","🐦"],["ظَرْف","\u2709\uFE0F"],["عِنَب","🍇"],["غَيْمَة","\u2601\uFE0F"],["فِيل","🐘"],
- ["قِطَّة","🐈"],["كَلْب","🐕"],["لَيْمُون","🍋"],["مَوْز","🍌"],["نَحْلَة","🐝"],["هِلَال","🌙"],["وَرْدَة","🌹"],["يَد","✋"]
-];
 // رسمان للكلمتين اللتين لا يوجد لهما رمز تعبيري (تمر، رمان)
 const LS_SVG={
  tamr:"<svg viewBox='0 0 120 120' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'><defs><radialGradient id='tm1' cx='.35' cy='.28' r='.9'><stop offset='0' stop-color='#e0924f'/><stop offset='.45' stop-color='#a24e1e'/><stop offset='1' stop-color='#4a1e09'/></radialGradient></defs><path d='M8 46Q60 -8 112 46' fill='none' stroke='#2e7d32' stroke-width='3.5' stroke-linecap='round'/><ellipse cx='18.4' cy='36.3' rx='8.2' ry='2.6' transform='rotate(18 18.4 36.3) translate(8.2 0)' fill='#43a047'/><ellipse cx='18.4' cy='36.3' rx='8.2' ry='2.6' transform='rotate(-98 18.4 36.3) translate(8.2 0)' fill='#43a047'/><ellipse cx='28.8' cy='28.7' rx='8.9' ry='2.6' transform='rotate(26 28.8 28.7) translate(8.9 0)' fill='#43a047'/><ellipse cx='28.8' cy='28.7' rx='8.9' ry='2.6' transform='rotate(-90 28.8 28.7) translate(8.9 0)' fill='#43a047'/><ellipse cx='39.2' cy='23.3' rx='9.6' ry='2.6' transform='rotate(35 39.2 23.3) translate(9.6 0)' fill='#43a047'/><ellipse cx='39.2' cy='23.3' rx='9.6' ry='2.6' transform='rotate(-81 39.2 23.3) translate(9.6 0)' fill='#43a047'/><ellipse cx='49.6' cy='20.1' rx='10.3' ry='2.6' transform='rotate(46 49.6 20.1) translate(10.3 0)' fill='#43a047'/><ellipse cx='49.6' cy='20.1' rx='10.3' ry='2.6' transform='rotate(-70 49.6 20.1) translate(10.3 0)' fill='#43a047'/><ellipse cx='60.0' cy='19.0' rx='11.0' ry='2.6' transform='rotate(58 60.0 19.0) translate(11.0 0)' fill='#43a047'/><ellipse cx='60.0' cy='19.0' rx='11.0' ry='2.6' transform='rotate(-58 60.0 19.0) translate(11.0 0)' fill='#43a047'/><ellipse cx='70.4' cy='20.1' rx='10.3' ry='2.6' transform='rotate(70 70.4 20.1) translate(10.3 0)' fill='#43a047'/><ellipse cx='70.4' cy='20.1' rx='10.3' ry='2.6' transform='rotate(-46 70.4 20.1) translate(10.3 0)' fill='#43a047'/><ellipse cx='80.8' cy='23.3' rx='9.6' ry='2.6' transform='rotate(81 80.8 23.3) translate(9.6 0)' fill='#43a047'/><ellipse cx='80.8' cy='23.3' rx='9.6' ry='2.6' transform='rotate(-35 80.8 23.3) translate(9.6 0)' fill='#43a047'/><ellipse cx='91.2' cy='28.7' rx='8.9' ry='2.6' transform='rotate(90 91.2 28.7) translate(8.9 0)' fill='#43a047'/><ellipse cx='91.2' cy='28.7' rx='8.9' ry='2.6' transform='rotate(-26 91.2 28.7) translate(8.9 0)' fill='#43a047'/><ellipse cx='101.6' cy='36.3' rx='8.2' ry='2.6' transform='rotate(98 101.6 36.3) translate(8.2 0)' fill='#43a047'/><ellipse cx='101.6' cy='36.3' rx='8.2' ry='2.6' transform='rotate(-18 101.6 36.3) translate(8.2 0)' fill='#43a047'/><g stroke='#6b4a1f' stroke-width='2.4' stroke-linecap='round' fill='none'><path d='M60 15L60 30'/><path d='M60 30L36 58'/><path d='M60 30L60 62'/><path d='M60 30L84 58'/></g><g transform='rotate(14 36 60)'><path d='M36 60C50 60 53 82 52 92C50 108 44 116 36 116C28 116 22 108 20 92C19 82 22 60 36 60Z' fill='url(#tm1)' stroke='#2a1105' stroke-width='2.6'/><path d='M27 80Q36 76 45 80M25 94Q36 90 47 94M27 106Q36 102 45 106' fill='none' stroke='#2a1105' stroke-opacity='.28' stroke-width='1.6' stroke-linecap='round'/><ellipse cx='29' cy='80' rx='2.6' ry='9' fill='#fff' fill-opacity='.32'/><path d='M31 61Q36 55 41 61L39.5 66Q36 63 32.5 66Z' fill='#6b4a1f' stroke='#2a1105' stroke-width='1.6' stroke-linejoin='round'/></g><g transform='rotate(-14 84 60)'><path d='M84 60C98 60 101 82 100 92C98 108 92 116 84 116C76 116 70 108 68 92C67 82 70 60 84 60Z' fill='url(#tm1)' stroke='#2a1105' stroke-width='2.6'/><path d='M75 80Q84 76 93 80M73 94Q84 90 95 94M75 106Q84 102 93 106' fill='none' stroke='#2a1105' stroke-opacity='.28' stroke-width='1.6' stroke-linecap='round'/><ellipse cx='77' cy='80' rx='2.6' ry='9' fill='#fff' fill-opacity='.32'/><path d='M79 61Q84 55 89 61L87.5 66Q84 63 80.5 66Z' fill='#6b4a1f' stroke='#2a1105' stroke-width='1.6' stroke-linejoin='round'/></g><g transform='rotate(0 60 66)'><path d='M60 66C74 66 77 88 76 98C74 114 68 122 60 122C52 122 46 114 44 98C43 88 46 66 60 66Z' fill='url(#tm1)' stroke='#2a1105' stroke-width='2.6'/><path d='M51 86Q60 82 69 86M49 100Q60 96 71 100M51 112Q60 108 69 112' fill='none' stroke='#2a1105' stroke-opacity='.28' stroke-width='1.6' stroke-linecap='round'/><ellipse cx='53' cy='86' rx='2.6' ry='9' fill='#fff' fill-opacity='.32'/><path d='M55 67Q60 61 65 67L63.5 72Q60 69 56.5 72Z' fill='#6b4a1f' stroke='#2a1105' stroke-width='1.6' stroke-linejoin='round'/></g></svg>",
@@ -126,7 +116,6 @@ function lsMark(i){try{const s=lsSeen();if(s.indexOf(i)<0){s.push(i);localStorag
 const lsPic=p=>p.indexOf("svg:")===0?LS_SVG[p.slice(4)]:'<span class="ls-emoji">'+p+'</span>';
 function lsWordHtml(w){const m=w.match(/^([\s\S][\u064B-\u0652\u0670]*)([\s\S]*)$/);return"<b>"+m[1]+"</b>"+m[2]}
 // نفس صياغة النطق تُستعمل للنطق وللتجهيز المسبق فيتطابق المخزَّن مع المطلوب
-const LS_SAY={"نَحْلَة":"نَحْلَه"};
 function lsArgs(i,kind){const n=letters[i][1],w=LS_SAY[lessonWords[i][0]]||lessonWords[i][0];return learnArgs(kind==="word"?w:kind==="name"?n:n+"، "+w)}
 function lsSay(kind){const a=lsArgs(lsIdx,kind);talk(a[0],a[1])}
 function lsGrid(){
@@ -169,6 +158,7 @@ function setMode(mode,silent){const study=mode==="learning",letterMode=mode==="l
  }
 function openSettings(){$("settings").hidden=false;$("max-number").value=maxNumber;$("system-voice").checked=localStorage.getItem("systemVoice")==="1";$("voice-id").value=localStorage.getItem("voiceSel")||"9";$("tts-quality").value=localStorage.getItem(STEPS_KEY)||"8";$("speech-speed-value").textContent=Number(speechSpeed).toFixed(2);$("speech-speed").value=speechSpeed;$("learning-volume-level").value=learningVolume;$("learning-volume-value").textContent=learningVolume+"%";$("enable-harakat").checked=features.harakat;$("enable-madd").checked=features.madd;$("enable-words").checked=features.words;$("enable-quiz").checked=features.quiz}
 function bind(){
+ $("quiz-prompt").onclick=replayQuiz;
  $("learning-mode").onclick=()=>setMode("learning");$("mini-cat-btn").onclick=speakCurrent;
  document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));t.classList.add("active");$(t.dataset.page).classList.add("active")});
  $("speak-number").onclick=()=>talk(numberWord(selectedNumber));$("speak-letter").onclick=()=>speakLearning(letters[selectedLetter][1]);$("speak-color").onclick=()=>talk(colors[selectedColor][0]);$("start-quiz").onclick=startQuiz;
@@ -225,7 +215,7 @@ function applyLive(){
  const f=()=>{applyLive();if(id==="speech-speed"||id==="voice-id"||id==="tts-quality")schedulePrefetch()};
  e.addEventListener("input",f);e.addEventListener("change",f)});
 // ---- زر «↺ افتراضي» تحت كل إعداد، وزر لإعادة الكل ----
-const SET_DEF={"speech-speed":"0.9","voice-id":"9","tts-quality":"8","system-voice":false,"learning-volume-level":"100","max-number":"10","enable-harakat":false,"enable-madd":false,"enable-words":false,"enable-quiz":false};
+const SET_DEF={"speech-speed":"0.9","voice-id":"9","tts-quality":"8","system-voice":false,"learning-volume-level":"100","max-number":"10","enable-harakat":true,"enable-madd":true,"enable-words":true,"enable-quiz":true};
 function resetOne(id){const e=$(id);if(!e)return;if(e.type==="checkbox")e.checked=!!SET_DEF[id];else e.value=SET_DEF[id];e.dispatchEvent(new Event("input",{bubbles:true}));e.dispatchEvent(new Event("change",{bubbles:true}))}
 Object.keys(SET_DEF).forEach(id=>{const e=$(id);if(!e)return;const lab=e.closest("label");if(!lab)return;const b=document.createElement("button");b.type="button";b.className="rst";b.textContent="↺ افتراضي";b.onclick=()=>resetOne(id);lab.insertAdjacentElement("afterend",b)});
 $("reset-all").onclick=()=>{Object.keys(SET_DEF).forEach(resetOne);$("save-settings").onclick()};

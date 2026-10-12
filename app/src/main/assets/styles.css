@@ -127,3 +127,16 @@
 .lb-words .word-item{min-height:72px;font-size:24px;background:#d8f3d4;color:#255b2b}
 .quiz-options{grid-template-columns:repeat(4,1fr)}
 .quiz-option{min-height:68px;font-size:28px}
+
+/* ===== v24: واجهة الحروف والوضع المتقدم ===== */
+.mini-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;line-height:1.25}
+.mini-item .mi-t{font-size:inherit;line-height:1.25}
+.mini-item .mi-l{font-size:12px;font-weight:800;opacity:.75}
+#harakat-grid{grid-template-columns:repeat(2,1fr)}
+#madd-grid{grid-template-columns:repeat(3,1fr)}
+.lb-words .word-item{font-size:22px;padding:6px 4px;overflow-wrap:anywhere;word-break:keep-all;min-height:64px}
+.lb-words .word-item .mi-t{max-width:100%}
+.detail{font-size:22px;background:#fff;border-radius:18px;padding:10px 12px;box-shadow:0 2px 0 #0000000f}
+.quiz-prompt{cursor:pointer;min-height:44px;margin:4px 0 8px;line-height:1.5}
+.quiz-option{font-size:26px}
+.lesson-box h3{font-size:16px;line-height:1.7;color:#6b574a}

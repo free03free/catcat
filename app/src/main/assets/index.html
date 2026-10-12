@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
-<meta name="theme-color" content="#fff4dc"><title>قط متكلم</title><link rel="stylesheet" href="styles.css?v=23">
+<meta name="theme-color" content="#fff4dc"><title>قط متكلم</title><link rel="stylesheet" href="styles.css?v=24">
 </head>
 <body class="lessons-on"><svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
 <radialGradient id="gHead" cx=".35" cy=".28" r=".85"><stop offset="0" stop-color="#c9d1da"/><stop offset=".55" stop-color="#96a2b1"/><stop offset="1" stop-color="#6f7c8d"/></radialGradient>
@@ -32,10 +32,10 @@
 <section id="numbers" class="page active"><div class="page-head"><h2>🔢 تعلّم الأرقام</h2><button id="speak-number" class="speak">🔊 نطق</button></div><p class="hint">اختر رقمًا وسينطقه القط بوضوح.</p><div id="number-grid" class="grid number-grid"></div></section>
 <section id="letters" class="page"><div class="page-head"><h2>🔤 الحروف العربية</h2><button id="speak-letter" class="speak">🔊 نطق</button></div><p class="hint">اختر الحرف ثم اضغط على الأصوات.</p><div id="letter-grid" class="grid letter-grid"></div><div id="letter-detail" class="detail"></div>
 <div class="lesson-tools">
-<div class="lesson-box lb-harakat"><h3>بَ بِ بُ بْ</h3><div id="harakat-grid" class="mini-grid"></div></div>
-<div class="lesson-box lb-madd"><h3>با بو بي</h3><div id="madd-grid" class="mini-grid"></div></div>
+<div class="lesson-box lb-harakat"><h3>الحركات</h3><div id="harakat-grid" class="mini-grid"></div></div>
+<div class="lesson-box lb-madd"><h3>المدود</h3><div id="madd-grid" class="mini-grid"></div></div>
 <div class="lesson-box lb-words"><h3>كلمات</h3><div id="word-grid" class="word-grid"></div></div>
-<div class="lesson-box quiz-box"><h3>🎧 اسمع واختر</h3><p id="quiz-prompt" class="quiz-prompt"></p><div id="quiz-options" class="quiz-options"></div><button id="start-quiz" class="speak">▶️ ابدأ</button></div>
+<div class="lesson-box quiz-box"><h3>🎧 اسمع واختر</h3><p id="quiz-prompt" class="quiz-prompt">اضغط «ابدأ» ثم استمع واختر ما سمعت.</p><div id="quiz-options" class="quiz-options"></div><button id="start-quiz" class="speak">▶️ ابدأ</button></div>
 </div></section>
 <section id="colors" class="page"><div class="page-head"><h2>🎨 تعلّم الألوان</h2><button id="speak-color" class="speak">🔊 نطق</button></div><p class="hint">اضغط على اللون ليسمع الطفل اسمه.</p><div id="color-grid" class="color-grid"></div></section></section>
 <section id="lessons" class="mode-page"><div class="ls-wrap">
@@ -56,4 +56,4 @@
 <div id="advanced-settings" class="settings-page"><h3>📚 ماذا يتعلّم الطفل؟</h3><p class="note">فعّل ما يناسب طفلك. كل شيء يُنطق صوته فقط، بلا تعليمات.</p><label class="switch-row"><span>بَ بِ بُ بْ &nbsp;الحركات</span><input id="enable-harakat" type="checkbox" checked></label><label class="switch-row"><span>با بو بي &nbsp;المدود</span><input id="enable-madd" type="checkbox" checked></label><label class="switch-row"><span>📝 كلمات بسيطة لكل حرف</span><input id="enable-words" type="checkbox" checked></label><label class="switch-row"><span>🎧 اختبار الاستماع</span><input id="enable-quiz" type="checkbox" checked></label><h3>🔢 الأرقام</h3><label>من 1 إلى<input id="max-number" type="number" min="1" max="1000" inputmode="numeric"></label></div>
 <button id="reset-all" type="button">↺ إعادة كل الإعدادات إلى الافتراضي</button>
 <p class="note">الإعدادات التي لا تتأثر فورًا (آخر رقم، مفاتيح التعلم) تُطبَّق بعد «حفظ الإعدادات».</p><button id="save-settings" class="primary">حفظ الإعدادات</button></div></section>
-<script src="app.js?v=23"></script><script src="games.js?v=2"></script></main></body></html>
+<script src="speech-data.js?v=1"></script><script src="app.js?v=24"></script><script src="games.js?v=3"></script></main></body></html>

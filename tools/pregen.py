@@ -15,6 +15,9 @@ from multiprocessing import get_context
 
 here = os.path.dirname(os.path.abspath(__file__))
 root = os.path.dirname(here)
+sys.path.insert(0, here)
+from arabic_numbers import parse_ar_number  # محلّل الأرقام للتحقق بالقيمة
+import hashlib
 ap = argparse.ArgumentParser()
 ap.add_argument("--model", default=os.path.join(root, "app/src/main/assets/models/tts-ar"))
 ap.add_argument("--out", default=os.path.join(root, "app/src/main/assets/tts-pre"))
@@ -69,10 +72,18 @@ def variants(c, num):
     nosukun = c.replace("\u0652", "")
     return [c, nodiac, nosukun]
 
-# مقاطع الحرف مع الحركة أو المد (بَ، بِ، بُ، بْ، با، بو، بي): يُنطق المقطع وحده بلا أي تعليمات.
+# مقاطع الحرف: حركة (بَ بِ بُ)، سكون بعد فتحة (أَبْ)، مد (بَا بُو بِي، آ).  تطابق sylKind في speech-data.js وEchoEngine.java.
 # النموذج ينطق المقطع المنفرد بشكل رديء، فنولّد جملة حاملة ثم نقتطع آخر مقطع منها فقط.
-SYL = re.compile("^[\u0621-\u064A][\u064E\u064F\u0650\u0652\u0627\u0648\u064A]$")
-def carrier(c): return f"حرف {c}، كرر: {c}" if c[1] in "\u064E\u064F\u0650\u0652" else f"مد: {c}"
+RE_SHORT = re.compile("^[\u0621-\u064A][\u064E\u064F\u0650]$")
+RE_SUKUN = re.compile("^\u0623\u064E[\u0621-\u064A]\u0652$")
+RE_MADD = re.compile("^([\u0621-\u064A][\u064E\u064F\u0650][\u0627\u0648\u064A]|\u0622)$")
+def syl_kind(c):
+    if RE_SHORT.match(c) or RE_SUKUN.match(c): return "short"
+    if RE_MADD.match(c): return "madd"
+    return ""
+def syl_letter(c):  # الحرف الذي يجب أن يسمعه التحقق: في «أَبْ» هو الباء لا الهمزة
+    return c[2] if RE_SUKUN.match(c) else ("\u0627" if c == "\u0622" else c[0])
+def carrier(c): return f"حرف {c}، كرر: {c}" if syl_kind(c) == "short" else f"مد: {c}"
 
 def cut_last(s, sr, gap_ms=90):
     fr = int(sr * 0.01); n = len(s) // fr
@@ -95,7 +106,10 @@ def cut_last(s, sr, gap_ms=90):
 
 def score(expected, n, got):
     g = norm(got).replace(" ", "")
-    if n is not None and g.isdigit(): return 1.0 if int(g) == n else 0.0
+    if n is not None:  # رقم: يُقبل فقط إذا نُطق بقيمته تمامًا (لا بشبهه): ثلاثون ≠ ثمانون
+        v = parse_ar_number(got)
+        if v is not None: return 1.0 if v == n else 0.0
+        return 0.0  # لم يُفهم كعدد → غير مقبول، وتُجرَّب الصيغ الأخرى
     e = norm(expected).replace(" ", "")
     if not e or not g: return 0.0
     return difflib.SequenceMatcher(None, e, g).ratio()
@@ -141,16 +155,21 @@ def work(voice):
         except Exception: pass
     def save(): json.dump(index, open(ip, "w", encoding="utf-8"), ensure_ascii=False)
     made = 0; stopped = False
+    want = {f"{int(r[1] * 100 + 0.5)}|{clean(r[0])}" for r in items}
+    for k in [k for k in index["items"] if k not in want]:   # نصوص قديمة حُذفت من lessons.json
+        try: os.remove(os.path.join(od, index["items"][k]))
+        except OSError: pass
+        index["items"].pop(k, None); index["weak"].pop(k, None)
     for n, row in enumerate(items):
         text, sp = row[0], row[1]; num = row[2] if len(row) > 2 else None
         c = clean(text); key = f"{int(sp * 100 + 0.5)}|{c}"
-        fn = f"{n:05d}.m4a"
+        fn = hashlib.sha1(key.encode("utf-8")).hexdigest()[:12] + ".m4a"  # ثابت: لا يتلف عند تغيّر ترتيب القائمة
         if key in index["items"] and os.path.exists(os.path.join(od, index["items"][key])): continue
         if DEADLINE and time.time() > DEADLINE: stopped = True; break
         best = None
         for attempt in range(1, (a.tries if rec else 1) + 1):
             g = sherpa_onnx.GenerationConfig(); g.sid = voice; g.speed = float(sp); g.num_steps = a.steps; g.extra = {"lang": "ar"}
-            syl = bool(SYL.match(c))
+            syl = bool(syl_kind(c))
             vs = [carrier(c)] if syl else variants(c, num)
             r = tts.generate(vs[(attempt - 1) % len(vs)], g)
             raw = np.asarray(r.samples, dtype=np.float32)
@@ -159,7 +178,7 @@ def work(voice):
             if r.sample_rate != 22050: s = resample_poly(s, 22050, r.sample_rate).astype(np.float32)
             if not rec: best = (s, 1.0, ""); break
             heard = transcribe(s, 22050)
-            sc = (0.0 if not okdur else (1.0 if norm(c[0]) in norm(heard) else 0.5)) if syl else score(c, num, heard)
+            sc = (0.0 if not okdur else (1.0 if norm(syl_letter(c)) in norm(heard) else 0.5)) if syl else score(c, num, heard)
             if best is None or sc > best[1]: best = (s, sc, heard)
             if sc >= a.accept: break
         s = best[0]
