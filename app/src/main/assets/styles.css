@@ -175,3 +175,17 @@
 .panel .chips button.on{background:#f3a044;color:#fff}
 .panel .gate-btns{margin-top:10px}
 #reset-all{background:transparent!important;color:#b04a4a;border:1.5px solid #ecc9c9;margin-top:6px}
+
+/* ===== إعدادات: كل خيار في بطاقة مستقلة مع افتراضيه ===== */
+.panel .grp{font-size:15px;font-weight:900;color:#8a7466;margin:18px 4px 8px}
+.panel .grp:first-child{margin-top:4px}
+.panel .opt{background:#fffaf3;border:1px solid #f0e2d0;border-radius:18px;padding:4px 14px 10px;margin:0 0 10px}
+.panel .opt .srow{border-bottom:0;padding:10px 0}
+.panel .opt .sfield{margin:10px 0 2px}
+.panel .opt .note{margin:6px 0 0}
+.panel .opt-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px dashed #ecd9c0;margin-top:8px;padding-top:8px}
+.panel .opt-foot .def{font-size:12.5px;font-weight:700;color:#8a7767}
+.panel .opt-foot .rst{margin:0;flex:none;padding:7px 12px;font-size:12.5px}
+.panel .opt-foot .rst:disabled{opacity:.35}
+.panel .opt-foot.is-def .def::after{content:" ✓"}
+.panel #test-voice{display:block;width:100%;margin:0 0 6px}

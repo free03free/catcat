@@ -25,9 +25,20 @@ public class MainActivity extends Activity {
     private EchoEngine engine;
     private volatile float speed = 0.95f;
     private volatile float volume = 1.0f;
+    private volatile boolean paused = false;
+    private static final long IDLE_MS = 10L * 60 * 1000;   // الشاشة تبقى مضاءة حتى 10 دقائق بلا لمس ولا نشاط داخل التطبيق
+    private final android.os.Handler idleH = new android.os.Handler(android.os.Looper.getMainLooper());
+    private final Runnable idleOff = () -> getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+    private void bumpScreen() {
+        getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        idleH.removeCallbacks(idleOff);
+        idleH.postDelayed(idleOff, IDLE_MS);
+    }
+    @Override public void onUserInteraction() { bumpScreen(); super.onUserInteraction(); }
 
     @Override protected void onCreate(Bundle b) {
         super.onCreate(b);
+        bumpScreen();
         web = new WebView(this);
         web.setBackgroundColor(0xFFFFF4DC);
         setContentView(web);
@@ -45,6 +56,7 @@ public class MainActivity extends Activity {
             }
             @Override public void report(String title, String msg) { toastJs(title + ": " + msg); }
             @Override public void toast(String msg) { toastJs(msg); }
+            @Override public void prefetchIdle() { runOnUiThread(() -> { if (paused && web != null) web.pauseTimers(); }); }
         });
         engine.prepare();
 
@@ -62,6 +74,8 @@ public class MainActivity extends Activity {
 
     private class Bridge {
         @JavascriptInterface public void say(String text, double pitchFactor, int delayMs) {
+            if (paused) return;   // لا نطق والتطبيق في الخلفية
+            runOnUiThread(() -> bumpScreen());   // النطق نشاط داخل التطبيق
             engine.say(text, (float)pitchFactor, delayMs, volume);
         }
         @JavascriptInterface public void setSpeed(double v) { speed = (float) Math.max(0.6, Math.min(1.2, v)); }
@@ -134,8 +148,24 @@ public class MainActivity extends Activity {
             if (!"1".equals(v)) finish();
         });
     }
-    @Override protected void onPause(){ engine.stop(); web.onPause(); super.onPause(); }
-    @Override protected void onResume(){super.onResume();web.onResume();}
+    /** عند الخروج أو الانتقال لتطبيق آخر: يتوقف النطق وكل التسلسلات فورًا. يستمر تجهيز الأصوات وحده في الخلفية حتى يكتمل، ثم يسكن التطبيق كليًّا. */
+    @Override protected void onPause(){
+        paused = true;
+        idleH.removeCallbacks(idleOff);
+        getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        engine.stop();
+        try { web.evaluateJavascript("window.appPaused&&window.appPaused()", null); } catch (Throwable ignored) {}
+        web.onPause();
+        if (!engine.isPrefetching()) web.pauseTimers();
+        super.onPause();
+    }
+    @Override protected void onResume(){
+        super.onResume();
+        paused = false;
+        bumpScreen();
+        web.resumeTimers();
+        web.onResume();
+    }
     @Override protected void onDestroy(){ if(engine!=null)engine.shutdown();web.destroy();super.onDestroy();}
 
     private void toastJs(String msg) {

@@ -9,7 +9,8 @@ let maxNumber=10;
 function readPrefs(){maxNumber=parseInt(localStorage.getItem("learningMaxNumber")||"10",10);if(!isFinite(maxNumber)||maxNumber<1)maxNumber=10;if(maxNumber>1000)maxNumber=1000}
 readPrefs();
 /* ----- بيانات منسوخة من app.js بنفس الصيغة ليتطابق النطق مع الحزمة المسبقة ----- */
-const {letters,colors,lessonWords,numberWord,ones,tens,words:LETTER_WORDS,SAY:LS_SAY,harakat:mkHarakat,madds:mkMadds,sylKind}=window.CatSpeech; // المصدر الوحيد للنصوص: speech-data.js
+const {letters,colors,lessonWords,numberWord,ones,tens,words:LETTER_WORDS,SAY:LS_SAY,harakat:mkHarakat,madds:mkMadds,sylKind}=window.CatSpeech;
+const LS_SOLO=window.CatSpeech.SAY_SOLO||{}; // المصدر الوحيد للنصوص: speech-data.js
 const LS_SVG={
  tamr:"<svg viewBox='0 0 120 120' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'><defs><radialGradient id='tm1' cx='.35' cy='.28' r='.9'><stop offset='0' stop-color='#e0924f'/><stop offset='.45' stop-color='#a24e1e'/><stop offset='1' stop-color='#4a1e09'/></radialGradient></defs><path d='M8 46Q60 -8 112 46' fill='none' stroke='#2e7d32' stroke-width='3.5' stroke-linecap='round'/><ellipse cx='18.4' cy='36.3' rx='8.2' ry='2.6' transform='rotate(18 18.4 36.3) translate(8.2 0)' fill='#43a047'/><ellipse cx='18.4' cy='36.3' rx='8.2' ry='2.6' transform='rotate(-98 18.4 36.3) translate(8.2 0)' fill='#43a047'/><ellipse cx='28.8' cy='28.7' rx='8.9' ry='2.6' transform='rotate(26 28.8 28.7) translate(8.9 0)' fill='#43a047'/><ellipse cx='28.8' cy='28.7' rx='8.9' ry='2.6' transform='rotate(-90 28.8 28.7) translate(8.9 0)' fill='#43a047'/><ellipse cx='39.2' cy='23.3' rx='9.6' ry='2.6' transform='rotate(35 39.2 23.3) translate(9.6 0)' fill='#43a047'/><ellipse cx='39.2' cy='23.3' rx='9.6' ry='2.6' transform='rotate(-81 39.2 23.3) translate(9.6 0)' fill='#43a047'/><ellipse cx='49.6' cy='20.1' rx='10.3' ry='2.6' transform='rotate(46 49.6 20.1) translate(10.3 0)' fill='#43a047'/><ellipse cx='49.6' cy='20.1' rx='10.3' ry='2.6' transform='rotate(-70 49.6 20.1) translate(10.3 0)' fill='#43a047'/><ellipse cx='60.0' cy='19.0' rx='11.0' ry='2.6' transform='rotate(58 60.0 19.0) translate(11.0 0)' fill='#43a047'/><ellipse cx='60.0' cy='19.0' rx='11.0' ry='2.6' transform='rotate(-58 60.0 19.0) translate(11.0 0)' fill='#43a047'/><ellipse cx='70.4' cy='20.1' rx='10.3' ry='2.6' transform='rotate(70 70.4 20.1) translate(10.3 0)' fill='#43a047'/><ellipse cx='70.4' cy='20.1' rx='10.3' ry='2.6' transform='rotate(-46 70.4 20.1) translate(10.3 0)' fill='#43a047'/><ellipse cx='80.8' cy='23.3' rx='9.6' ry='2.6' transform='rotate(81 80.8 23.3) translate(9.6 0)' fill='#43a047'/><ellipse cx='80.8' cy='23.3' rx='9.6' ry='2.6' transform='rotate(-35 80.8 23.3) translate(9.6 0)' fill='#43a047'/><ellipse cx='91.2' cy='28.7' rx='8.9' ry='2.6' transform='rotate(90 91.2 28.7) translate(8.9 0)' fill='#43a047'/><ellipse cx='91.2' cy='28.7' rx='8.9' ry='2.6' transform='rotate(-26 91.2 28.7) translate(8.9 0)' fill='#43a047'/><ellipse cx='101.6' cy='36.3' rx='8.2' ry='2.6' transform='rotate(98 101.6 36.3) translate(8.2 0)' fill='#43a047'/><ellipse cx='101.6' cy='36.3' rx='8.2' ry='2.6' transform='rotate(-18 101.6 36.3) translate(8.2 0)' fill='#43a047'/><g stroke='#6b4a1f' stroke-width='2.4' stroke-linecap='round' fill='none'><path d='M60 15L60 30'/><path d='M60 30L36 58'/><path d='M60 30L60 62'/><path d='M60 30L84 58'/></g><g transform='rotate(14 36 60)'><path d='M36 60C50 60 53 82 52 92C50 108 44 116 36 116C28 116 22 108 20 92C19 82 22 60 36 60Z' fill='url(#tm1)' stroke='#2a1105' stroke-width='2.6'/><path d='M27 80Q36 76 45 80M25 94Q36 90 47 94M27 106Q36 102 45 106' fill='none' stroke='#2a1105' stroke-opacity='.28' stroke-width='1.6' stroke-linecap='round'/><ellipse cx='29' cy='80' rx='2.6' ry='9' fill='#fff' fill-opacity='.32'/><path d='M31 61Q36 55 41 61L39.5 66Q36 63 32.5 66Z' fill='#6b4a1f' stroke='#2a1105' stroke-width='1.6' stroke-linejoin='round'/></g><g transform='rotate(-14 84 60)'><path d='M84 60C98 60 101 82 100 92C98 108 92 116 84 116C76 116 70 108 68 92C67 82 70 60 84 60Z' fill='url(#tm1)' stroke='#2a1105' stroke-width='2.6'/><path d='M75 80Q84 76 93 80M73 94Q84 90 95 94M75 106Q84 102 93 106' fill='none' stroke='#2a1105' stroke-opacity='.28' stroke-width='1.6' stroke-linecap='round'/><ellipse cx='77' cy='80' rx='2.6' ry='9' fill='#fff' fill-opacity='.32'/><path d='M79 61Q84 55 89 61L87.5 66Q84 63 80.5 66Z' fill='#6b4a1f' stroke='#2a1105' stroke-width='1.6' stroke-linejoin='round'/></g><g transform='rotate(0 60 66)'><path d='M60 66C74 66 77 88 76 98C74 114 68 122 60 122C52 122 46 114 44 98C43 88 46 66 60 66Z' fill='url(#tm1)' stroke='#2a1105' stroke-width='2.6'/><path d='M51 86Q60 82 69 86M49 100Q60 96 71 100M51 112Q60 108 69 112' fill='none' stroke='#2a1105' stroke-opacity='.28' stroke-width='1.6' stroke-linecap='round'/><ellipse cx='53' cy='86' rx='2.6' ry='9' fill='#fff' fill-opacity='.32'/><path d='M55 67Q60 61 65 67L63.5 72Q60 69 56.5 72Z' fill='#6b4a1f' stroke='#2a1105' stroke-width='1.6' stroke-linejoin='round'/></g></svg>",
  rumman:"<svg viewBox=\"0 0 120 120\" xmlns=\"http://www.w3.org/2000/svg\" aria-hidden=\"true\"><defs><radialGradient id=\"rr\" cx=\".4\" cy=\".3\" r=\".9\"><stop offset=\"0\" stop-color=\"#ee5a4f\"/><stop offset=\".7\" stop-color=\"#b8182a\"/><stop offset=\"1\" stop-color=\"#7d0f1d\"/></radialGradient></defs>\n<path d=\"M44 20L50 6L57 17L64 4L71 17L78 6L84 20Z\" fill=\"#9c1426\" stroke=\"#6e0b17\" stroke-width=\"2\" stroke-linejoin=\"round\"/>\n<circle cx=\"60\" cy=\"66\" r=\"46\" fill=\"url(#rr)\" stroke=\"#6e0b17\" stroke-width=\"3\"/>\n<circle cx=\"60\" cy=\"66\" r=\"40\" fill=\"#fff0cf\"/>\n<path d=\"M60 26V106M20 66H100M32 38L88 94M88 38L32 94\" stroke=\"#f1d6a0\" stroke-width=\"3\"/>\n<ellipse cx=\"90.0\" cy=\"66.0\" rx=\"6.2\" ry=\"7.4\" transform=\"rotate(90 90.0 66.0)\" fill=\"#c4122b\" stroke=\"#7a0a1a\" stroke-width=\"1.3\"/><ellipse cx=\"88.5\" cy=\"63.8\" rx=\"1.8\" ry=\"2.6\" fill=\"#fff\" fill-opacity=\".55\"/><ellipse cx=\"86.0\" cy=\"81.0\" rx=\"6.2\" ry=\"7.4\" transform=\"rotate(120 86.0 81.0)\" fill=\"#c4122b\" stroke=\"#7a0a1a\" stroke-width=\"1.3\"/><ellipse cx=\"84.5\" cy=\"78.8\" rx=\"1.8\" ry=\"2.6\" fill=\"#fff\" fill-opacity=\".55\"/><ellipse cx=\"75.0\" cy=\"92.0\" rx=\"6.2\" ry=\"7.4\" transform=\"rotate(150 75.0 92.0)\" fill=\"#c4122b\" stroke=\"#7a0a1a\" stroke-width=\"1.3\"/><ellipse cx=\"73.5\" cy=\"89.8\" rx=\"1.8\" ry=\"2.6\" fill=\"#fff\" fill-opacity=\".55\"/><ellipse cx=\"60.0\" cy=\"96.0\" rx=\"6.2\" ry=\"7.4\" transform=\"rotate(180 60.0 96.0)\" fill=\"#c4122b\" stroke=\"#7a0a1a\" stroke-width=\"1.3\"/><ellipse cx=\"58.5\" cy=\"93.8\" rx=\"1.8\" ry=\"2.6\" fill=\"#fff\" fill-opacity=\".55\"/><ellipse cx=\"45.0\" cy=\"92.0\" rx=\"6.2\" ry=\"7.4\" transform=\"rotate(210 45.0 92.0)\" fill=\"#c4122b\" stroke=\"#7a0a1a\" stroke-width=\"1.3\"/><ellipse cx=\"43.5\" cy=\"89.8\" rx=\"1.8\" ry=\"2.6\" fill=\"#fff\" fill-opacity=\".55\"/><ellipse cx=\"34.0\" cy=\"81.0\" rx=\"6.2\" ry=\"7.4\" transform=\"rotate(240 34.0 81.0)\" fill=\"#c4122b\" stroke=\"#7a0a1a\" stroke-width=\"1.3\"/><ellipse cx=\"32.5\" cy=\"78.8\" rx=\"1.8\" ry=\"2.6\" fill=\"#fff\" fill-opacity=\".55\"/><ellipse cx=\"30.0\" cy=\"66.0\" rx=\"6.2\" ry=\"7.4\" transform=\"rotate(270 30.0 66.0)\" fill=\"#c4122b\" stroke=\"#7a0a1a\" stroke-width=\"1.3\"/><ellipse cx=\"28.5\" cy=\"63.8\" rx=\"1.8\" ry=\"2.6\" fill=\"#fff\" fill-opacity=\".55\"/><ellipse cx=\"34.0\" cy=\"51.0\" rx=\"6.2\" ry=\"7.4\" transform=\"rotate(300 34.0 51.0)\" fill=\"#c4122b\" stroke=\"#7a0a1a\" stroke-width=\"1.3\"/><ellipse cx=\"32.5\" cy=\"48.8\" rx=\"1.8\" ry=\"2.6\" fill=\"#fff\" fill-opacity=\".55\"/><ellipse cx=\"45.0\" cy=\"40.0\" rx=\"6.2\" ry=\"7.4\" transform=\"rotate(330 45.0 40.0)\" fill=\"#c4122b\" stroke=\"#7a0a1a\" stroke-width=\"1.3\"/><ellipse cx=\"43.5\" cy=\"37.8\" rx=\"1.8\" ry=\"2.6\" fill=\"#fff\" fill-opacity=\".55\"/><ellipse cx=\"60.0\" cy=\"36.0\" rx=\"6.2\" ry=\"7.4\" transform=\"rotate(360 60.0 36.0)\" fill=\"#c4122b\" stroke=\"#7a0a1a\" stroke-width=\"1.3\"/><ellipse cx=\"58.5\" cy=\"33.8\" rx=\"1.8\" ry=\"2.6\" fill=\"#fff\" fill-opacity=\".55\"/><ellipse cx=\"75.0\" cy=\"40.0\" rx=\"6.2\" ry=\"7.4\" transform=\"rotate(390 75.0 40.0)\" fill=\"#c4122b\" stroke=\"#7a0a1a\" stroke-width=\"1.3\"/><ellipse cx=\"73.5\" cy=\"37.8\" rx=\"1.8\" ry=\"2.6\" fill=\"#fff\" fill-opacity=\".55\"/><ellipse cx=\"86.0\" cy=\"51.0\" rx=\"6.2\" ry=\"7.4\" transform=\"rotate(420 86.0 51.0)\" fill=\"#c4122b\" stroke=\"#7a0a1a\" stroke-width=\"1.3\"/><ellipse cx=\"84.5\" cy=\"48.8\" rx=\"1.8\" ry=\"2.6\" fill=\"#fff\" fill-opacity=\".55\"/><ellipse cx=\"77.5\" cy=\"73.4\" rx=\"6.2\" ry=\"7.4\" transform=\"rotate(113 77.5 73.4)\" fill=\"#c4122b\" stroke=\"#7a0a1a\" stroke-width=\"1.3\"/><ellipse cx=\"76.0\" cy=\"71.2\" rx=\"1.8\" ry=\"2.6\" fill=\"#fff\" fill-opacity=\".55\"/><ellipse cx=\"67.1\" cy=\"83.6\" rx=\"6.2\" ry=\"7.4\" transform=\"rotate(158 67.1 83.6)\" fill=\"#c4122b\" stroke=\"#7a0a1a\" stroke-width=\"1.3\"/><ellipse cx=\"65.6\" cy=\"81.4\" rx=\"1.8\" ry=\"2.6\" fill=\"#fff\" fill-opacity=\".55\"/><ellipse cx=\"52.6\" cy=\"83.5\" rx=\"6.2\" ry=\"7.4\" transform=\"rotate(203 52.6 83.5)\" fill=\"#c4122b\" stroke=\"#7a0a1a\" stroke-width=\"1.3\"/><ellipse cx=\"51.1\" cy=\"81.3\" rx=\"1.8\" ry=\"2.6\" fill=\"#fff\" fill-opacity=\".55\"/><ellipse cx=\"42.4\" cy=\"73.1\" rx=\"6.2\" ry=\"7.4\" transform=\"rotate(248 42.4 73.1)\" fill=\"#c4122b\" stroke=\"#7a0a1a\" stroke-width=\"1.3\"/><ellipse cx=\"40.9\" cy=\"70.9\" rx=\"1.8\" ry=\"2.6\" fill=\"#fff\" fill-opacity=\".55\"/><ellipse cx=\"42.5\" cy=\"58.6\" rx=\"6.2\" ry=\"7.4\" transform=\"rotate(293 42.5 58.6)\" fill=\"#c4122b\" stroke=\"#7a0a1a\" stroke-width=\"1.3\"/><ellipse cx=\"41.0\" cy=\"56.4\" rx=\"1.8\" ry=\"2.6\" fill=\"#fff\" fill-opacity=\".55\"/><ellipse cx=\"52.9\" cy=\"48.4\" rx=\"6.2\" ry=\"7.4\" transform=\"rotate(338 52.9 48.4)\" fill=\"#c4122b\" stroke=\"#7a0a1a\" stroke-width=\"1.3\"/><ellipse cx=\"51.4\" cy=\"46.2\" rx=\"1.8\" ry=\"2.6\" fill=\"#fff\" fill-opacity=\".55\"/><ellipse cx=\"67.4\" cy=\"48.5\" rx=\"6.2\" ry=\"7.4\" transform=\"rotate(383 67.4 48.5)\" fill=\"#c4122b\" stroke=\"#7a0a1a\" stroke-width=\"1.3\"/><ellipse cx=\"65.9\" cy=\"46.3\" rx=\"1.8\" ry=\"2.6\" fill=\"#fff\" fill-opacity=\".55\"/><ellipse cx=\"77.6\" cy=\"58.9\" rx=\"6.2\" ry=\"7.4\" transform=\"rotate(428 77.6 58.9)\" fill=\"#c4122b\" stroke=\"#7a0a1a\" stroke-width=\"1.3\"/><ellipse cx=\"76.1\" cy=\"56.7\" rx=\"1.8\" ry=\"2.6\" fill=\"#fff\" fill-opacity=\".55\"/><ellipse cx=\"65.6\" cy=\"71.7\" rx=\"6.2\" ry=\"7.4\" transform=\"rotate(136 65.6 71.7)\" fill=\"#c4122b\" stroke=\"#7a0a1a\" stroke-width=\"1.3\"/><ellipse cx=\"64.1\" cy=\"69.5\" rx=\"1.8\" ry=\"2.6\" fill=\"#fff\" fill-opacity=\".55\"/><ellipse cx=\"52.2\" cy=\"68.0\" rx=\"6.2\" ry=\"7.4\" transform=\"rotate(256 52.2 68.0)\" fill=\"#c4122b\" stroke=\"#7a0a1a\" stroke-width=\"1.3\"/><ellipse cx=\"50.7\" cy=\"65.8\" rx=\"1.8\" ry=\"2.6\" fill=\"#fff\" fill-opacity=\".55\"/><ellipse cx=\"62.2\" cy=\"58.3\" rx=\"6.2\" ry=\"7.4\" transform=\"rotate(376 62.2 58.3)\" fill=\"#c4122b\" stroke=\"#7a0a1a\" stroke-width=\"1.3\"/><ellipse cx=\"60.7\" cy=\"56.1\" rx=\"1.8\" ry=\"2.6\" fill=\"#fff\" fill-opacity=\".55\"/></svg>",
@@ -21,7 +22,7 @@ const lsPic=p=>p.indexOf("svg:")===0?LS_SVG[p.slice(4)]:'<span class="ls-emoji">
 const BASE=0.9;
 const spd=k=>Math.round(BASE*k*1000)/1000;
 function learnArgs(text){
- const t=LS_SAY[String(text||"")]||String(text||""),k=sylKind(t);
+ const s0=String(text||""),t=LS_SOLO[s0]||LS_SAY[s0]||s0,k=sylKind(t);
  if(k==="short")return[t,spd(.8)];
  if(k==="madd")return[t,spd(.84)];
  return[t,spd(.91)];
@@ -376,15 +377,19 @@ const LSCSS=`
 .ls-tabs{position:relative;z-index:1;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0 8px}
 .ls-tab{border:0;border-radius:18px;padding:10px 4px;font-size:18px;font-weight:900;color:#fff;background:rgba(255,255,255,.22)}
 .ls-tab.on{background:#fff;color:var(--c2);box-shadow:0 4px 0 rgba(0,0,0,.18)}
-.ls-stage{position:relative;z-index:1;flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center}
+.ls-stage{position:relative;z-index:1;flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;overflow:hidden}
 .ls-big{font-weight:900;line-height:1.05;text-shadow:0 6px 0 rgba(0,0,0,.18);animation:gmIn .4s both}
-.ls-big.num{font-size:clamp(120px,46vw,230px)}
-.ls-big.num.l3{font-size:clamp(90px,32vw,170px)}
-.ls-big.let{font-size:clamp(150px,52vw,260px)}
+.ls-big.num{font-size:min(46vw,26vh,230px)}
+.ls-big.num.l3{font-size:min(32vw,19vh,170px)}
+.ls-big.let{font-size:min(30vw,15vh,140px);line-height:1.8;padding:.05em 0}
 .ls-circle{width:min(62vw,250px);height:min(62vw,250px);border-radius:50%;border:10px solid rgba(255,255,255,.95);box-shadow:0 10px 0 rgba(0,0,0,.2),inset 0 -14px 0 rgba(0,0,0,.1);animation:gmIn .4s both}
 .ls-circle.light{border-color:#d9d9d9}
-.ls-pic svg{width:clamp(70px,22vw,100px);height:clamp(70px,22vw,100px)}
-.ls-pic .ls-emoji{font-size:clamp(64px,20vw,90px);line-height:1}
+.lsx-pic{flex:none;width:clamp(110px,32vw,140px);height:clamp(110px,32vw,140px);display:grid;place-items:center;background:#ffffffd9;border-radius:22px;overflow:hidden}
+.lsx-pic svg{width:76%;height:76%}
+.lsx-pic .ls-emoji{font-size:clamp(60px,18vw,84px);line-height:1}
+.ls-stage>*{flex:none}
+.ls-b svg{width:40%;height:40%;fill:currentColor}
+.ls-b.main svg{width:46%;height:46%}
 .ls-sub{font-size:clamp(28px,8vw,40px);font-weight:900;background:rgba(255,255,255,.24);border-radius:999px;padding:8px 26px;max-width:100%}
 .ls-bar{position:relative;z-index:1;height:12px;border-radius:99px;background:rgba(0,0,0,.2);overflow:hidden;margin:6px 2px}
 .ls-bar i{display:block;height:100%;width:0;border-radius:inherit;background:linear-gradient(90deg,#fff7ae,#ffd93b);transition:width .4s}
@@ -397,14 +402,15 @@ const LSCSS=`
 const lst=document.createElement("style");lst.textContent=LSCSS;document.head.appendChild(lst);
 
 const lsScr=document.createElement("div");lsScr.id="ls-screen";lsScr.hidden=true;lsScr.setAttribute("role","dialog");
-lsScr.innerHTML='<header class="ls-top"><button id="ls-back" class="gms-x" type="button" aria-label="رجوع">✕</button><div class="gms-title"><span>🎧</span><span>استمع وتعلّم</span></div><div id="ls-count" class="gms-pill">1 / 10</div></header>'+
+lsScr.innerHTML='<header class="ls-top"><button id="ls-back" class="gms-x" type="button" aria-label="رجوع">✕</button><div class="gms-title"><span>🎧</span><span>استمع وتعلّم</span></div><div id="lsx-count" class="gms-pill">1 / 10</div></header>'+
  '<nav class="ls-tabs">'+Object.keys(LSK).map(k=>'<button type="button" class="ls-tab" data-k="'+k+'">'+LSK[k].ico+" "+LSK[k].label+'</button>').join("")+'</nav>'+
  '<div class="ls-bar"><i id="ls-prog"></i></div>'+
  '<main id="ls-stage" class="ls-stage"></main>'+
- '<div class="ls-ctl"><button id="ls-prev" class="ls-b" type="button" aria-label="السابق">⏮</button><button id="ls-play" class="ls-b main" type="button" aria-label="تشغيل">⏸</button><button id="ls-next" class="ls-b" type="button" aria-label="التالي">⏭</button></div>';
+ '<div class="ls-ctl"><button id="lsx-prev" class="ls-b" type="button" aria-label="السابق">⏮</button><button id="lsx-play" class="ls-b main" type="button" aria-label="تشغيل"></button><button id="lsx-next" class="ls-b" type="button" aria-label="التالي">⏭</button></div>';
 document.body.appendChild(lsScr);
 
 let ls=null;
+const IC_PAUSE='<svg viewBox="0 0 24 24"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>',IC_PLAY='<svg viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></svg>',IC_REPLAY='<svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7a6 6 0 1 1-6 6H4a8 8 0 1 0 8-8z"/></svg>';
 const lsTotal=kind=>kind==="numbers"?maxNumber:(kind==="letters"?letters.length:colors.length);
 function lsItem(kind,i){
  if(kind==="numbers"){const n=i+1,w=numberWord(n);return{big:'<div class="ls-big num'+(String(n).length>=3?" l3":"")+'">'+n+'</div>',sub:w,say:[w,BASE]}}
@@ -413,26 +419,26 @@ function lsItem(kind,i){
 }
 function lsRender(){
  const it=lsItem(ls.kind,ls.i),st=$("ls-stage"),n=lsTotal(ls.kind);
- st.innerHTML=it.big+(it.pic?'<div class="ls-pic">'+it.pic+'</div>':"")+'<div class="ls-sub">'+it.sub+'</div>';
+ st.innerHTML=it.big+(it.pic?'<div class="lsx-pic">'+it.pic+'</div>':"")+'<div class="ls-sub">'+it.sub+'</div>';
  st.firstChild.onclick=()=>lsGo(ls.i);
- $("ls-count").textContent=(ls.i+1)+" / "+n;
+ $("lsx-count").textContent=(ls.i+1)+" / "+n;
  $("ls-prog").style.width=((ls.i+1)/n*100)+"%";
- $("ls-play").textContent=ls.playing?"⏸":"▶";
+ $("lsx-play").innerHTML=ls.done?IC_REPLAY:(ls.playing?IC_PAUSE:IC_PLAY);$("lsx-play").setAttribute("aria-label",ls.done?"من البداية":(ls.playing?"إيقاف":"تشغيل"));
 }
 async function lsGo(i){
  if(!ls)return;
  const n=lsTotal(ls.kind);ls.i=Math.max(0,Math.min(n-1,i));
- const tok=++ls.tok;lsRender();
+ ls.done=false;const tok=++ls.tok;lsRender();
  const it=lsItem(ls.kind,ls.i);
  await sayWait(it.say[0],it.say[1],6000);
  if(!ls||ls.tok!==tok||!ls.playing)return;
  await sleep(1100);
  if(!ls||ls.tok!==tok||!ls.playing)return;
- if(ls.i<n-1)lsGo(ls.i+1);else{ls.playing=false;lsRender()}
+ if(ls.i<n-1)lsGo(ls.i+1);else{ls.playing=false;ls.done=true;lsRender()}
 }
 function lsStart(kind){
  readPrefs();closeGame();
- ls={kind:kind,i:0,playing:true,tok:0};
+ ls={kind:kind,i:0,playing:true,tok:0,done:false};
  const k=LSK[kind];lsScr.style.setProperty("--c1",k.c1);lsScr.style.setProperty("--c2",k.c2);
  [].slice.call(lsScr.querySelectorAll(".ls-tab")).forEach(b=>b.classList.toggle("on",b.dataset.k===kind));
  lsScr.hidden=false;document.body.classList.add("gm-open");
@@ -449,12 +455,17 @@ function lsClose(){
 }
 [].slice.call(lsScr.querySelectorAll(".ls-tab")).forEach(b=>{b.onclick=()=>lsStart(b.dataset.k)});
 $("ls-back").onclick=lsClose;
-$("ls-next").onclick=()=>{if(ls)lsGo(ls.i+1)};
-$("ls-prev").onclick=()=>{if(ls)lsGo(ls.i-1)};
-$("ls-play").onclick=()=>{
+$("lsx-next").onclick=()=>{if(ls)lsGo(ls.i+1)};
+$("lsx-prev").onclick=()=>{if(ls)lsGo(ls.i-1)};
+$("lsx-play").onclick=()=>{
  if(!ls)return;
+ if(ls.done){ls.playing=true;lsGo(0);return}
  if(ls.playing){ls.playing=false;ls.tok++;cancelWait();try{if(window.TomNative&&TomNative.stop)TomNative.stop()}catch(e){}lsRender()}
- else{ls.playing=true;lsGo(ls.i>=lsTotal(ls.kind)-1?0:ls.i)}
+ else{ls.playing=true;lsGo(ls.i)}
+};
+/* عند مغادرة التطبيق يُوقَف التسلسل ولا يُستأنف من تلقاء نفسه */
+window.appPaused=function(){
+ if(ls&&ls.playing){ls.playing=false;ls.tok++;cancelWait();lsRender()}
 };
 const lsCard=document.createElement("button");lsCard.type="button";lsCard.className="gh-card";lsCard.style.cssText="--c1:#fbbf24;--c2:#f97316";
 lsCard.innerHTML='<span class="gh-ico">🎧</span><span class="gh-txt"><b>استمع وتعلّم</b><small>أرقام وحروف وألوان بالتسلسل</small></span><span class="gh-best">▶</span>';

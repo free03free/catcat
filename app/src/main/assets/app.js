@@ -7,7 +7,7 @@ if(!Number.isFinite(maxNumber)||maxNumber<1)maxNumber=10;
 if(maxNumber>1000)maxNumber=1000;
 let speechSpeed=parseFloat(localStorage.getItem(SPEED_KEY)||"0.9");
 let learningVolume=parseInt(localStorage.getItem(LEARNING_VOLUME_KEY)||"100",10);
-if(!Number.isFinite(learningVolume)||learningVolume<0)learningVolume=90;
+if(!Number.isFinite(learningVolume)||learningVolume<0)learningVolume=100;
 if(learningVolume>100)learningVolume=100;
 let volumeLevel=learningVolume;
 if(!Number.isFinite(speechSpeed))speechSpeed=0.9;
@@ -15,7 +15,7 @@ let features=Object.assign({harakat:true,madd:true,words:true,quiz:true},JSON.pa
 let selectedNumber=1,selectedLetter=0,selectedColor=0,quizAnswer="",quizActive=false;
 let heard="",pokes=0,pokeT=0,idleAt=Date.now(),talkDog=0;
 pushNativePrefs();
-const {letters,colors,lessonWords,numberWord,ones,tens,words:LETTER_WORDS,SAY:LS_SAY,harakat:mkHarakat,madds:mkMadds,sylKind}=window.CatSpeech; // المصدر الوحيد للنصوص: speech-data.js
+const {letters,colors,lessonWords,numberWord,ones,tens,words:LETTER_WORDS,SAY:LS_SAY,SAY_SOLO:LS_SOLO=window.CatSpeech.SAY_SOLO||{},harakat:mkHarakat,madds:mkMadds,sylKind}=window.CatSpeech; // المصدر الوحيد للنصوص: speech-data.js
 const $=id=>document.getElementById(id);
 function showSpeech(t){const s2=$("speech2");if(s2)s2.textContent=t}
 const catEls=()=>[$("cat2")];
@@ -61,7 +61,7 @@ function currentLetter(){return letters[selectedLetter][0]}
 const spd=k=>Math.max(.6,Math.min(1.2,speechSpeed*k));
 // يحدد النص المنطوق وسرعته لكل عنصر تعليمي؛ نفس الدالة تُستعمل للنطق وللتجهيز المسبق كي يتطابق المخزَّن مع المطلوب
 function learnArgs(text){
- const t=LS_SAY[String(text||"")]||String(text||""),k=sylKind(t);
+ const s0=String(text||""),t=LS_SOLO[s0]||LS_SAY[s0]||s0,k=sylKind(t);
  if(k==="short")return[t,spd(.8)];
  if(k==="madd")return[t,spd(.84)];
  return[t,spd(.91)];
@@ -258,6 +258,30 @@ function resetOne(id){const e=$(id);if(!e)return;if(e.type==="checkbox")e.checke
  new MutationObserver(()=>{const v=parseInt(mn.value,10);if(Number.isFinite(v))last=clamp(v);sync()}).observe($("settings"),{attributes:true,attributeFilter:["hidden"]});
 })();
 $("reset-all").onclick=()=>{Object.keys(SET_DEF).forEach(resetOne);$("save-settings").onclick()};
+/* ---- كل خيار في بطاقة مستقلة، وتحته الافتراضي وزر استعادته ---- */
+(function(){
+ const DEF_LABEL={"speech-speed":"0.90","voice-id":"صوت 10 (الأوضح)","tts-quality":"الأعلى وضوحًا","system-voice":"مُعطَّل","learning-volume-level":"100%","max-number":"10","enable-harakat":"مفعَّل","enable-madd":"مفعَّل","enable-words":"مفعَّل","enable-quiz":"مفعَّل"};
+ const list=[];
+ Object.keys(SET_DEF).forEach(id=>{
+  const e=$(id),box=e&&e.closest(".opt");if(!box)return;
+  const foot=document.createElement("div");foot.className="opt-foot";
+  const d=document.createElement("span");d.className="def";d.textContent="الافتراضي: "+DEF_LABEL[id];
+  const b=document.createElement("button");b.type="button";b.className="rst";b.textContent="↺ استعادة الافتراضي";
+  b.onclick=()=>{resetOne(id);refresh()};
+  foot.appendChild(d);foot.appendChild(b);box.appendChild(foot);list.push([id,e,b]);
+ });
+ function isDef(id,e){
+  if(e.type==="checkbox")return e.checked===!!SET_DEF[id];
+  if(id==="speech-speed"||id==="learning-volume-level")return Math.abs(parseFloat(e.value)-parseFloat(SET_DEF[id]))<1e-6;
+  if(id==="max-number")return parseInt(toLatin(e.value),10)===parseInt(SET_DEF[id],10);
+  return String(e.value)===String(SET_DEF[id]);
+ }
+ function refresh(){list.forEach(x=>{const same=isDef(x[0],x[1]);x[2].disabled=same;x[2].parentElement.classList.toggle("is-def",same)})}
+ list.forEach(x=>{["input","change"].forEach(t=>x[1].addEventListener(t,refresh))});
+ document.addEventListener("click",()=>setTimeout(refresh,0),true);
+ new MutationObserver(()=>setTimeout(refresh,0)).observe($("settings"),{attributes:true,attributeFilter:["hidden"]});
+ refresh();
+})();
 $("test-voice").onclick=()=>{applyLive();talk("مَرْحَبًا أَنَا القِطُّ المُتَكَلِّم",speechSpeed)};
 renderNumbers();renderLetters();renderColors();bind();bindCat($("cat2"));startIdle();setMode("learning",true);
 })();

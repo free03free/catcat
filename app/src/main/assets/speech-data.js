@@ -92,10 +92,13 @@
   /* نطق خاص بكلمات يخطئ فيها المحرك عند ختمها بتاء مربوطة */
   var SAY = { "نَحْلَة": "نَحْلَه" };
 
+  /* كلمات يخطئ المحرك في نطقها منفردة؛ تُنطق مع اسم الحرف كما في «الحرف، الكلمة» الذي ينطقها صحيحًا (مقطع جاهز أصلًا) */
+  var SAY_SOLO = { "غَيْمَة": "غَيْن، غَيْمَة" };
+
   var api = {
     letters: letters, colors: colors, words: words, lessonWords: lessonWords, pics: pics,
     harakat: harakat, madds: madds, vowelSyl: vowelSyl, sukunSyl: sukunSyl, maddSyl: maddSyl, sylKind: sylKind,
-    ones: ones, tens: tens, numberWord: numberWord, SAY: SAY
+    ones: ones, tens: tens, numberWord: numberWord, SAY: SAY, SAY_SOLO: SAY_SOLO
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.CatSpeech = api;
