@@ -66,7 +66,7 @@ PC="$CACHE/tts-pre"
 if [ "${SKIP_PREGEN:-0}" != "1" ] && [ ! -f "$PRE/.complete" ]; then
   mkdir -p "$PRE" "$PC"
   # استرجاع ما وُلّد سابقًا (مثلًا بعد إعادة استيراد المشروع)
-  [ -d "$PC/v0" ] && cp -a "$PC"/. "$PRE"/
+  ls -d "$PC"/v[0-9] >/dev/null 2>&1 && cp -a "$PC"/. "$PRE"/
   rm -f "$PRE/.failed"
   PY=$(command -v python3 || command -v python || true)
   if [ -z "$PY" ]; then
@@ -85,7 +85,7 @@ if [ "${SKIP_PREGEN:-0}" != "1" ] && [ ! -f "$PRE/.complete" ]; then
         rm -f "$CACHE/whisper-small.tar.bz2"
       fi
       echo "توليد الأصوات الجاهزة (حدّ ${PREGEN_MINUTES:-25} دقيقة في هذا البناء)…"
-      "$PY" tools/pregen.py --steps "${PREGEN_STEPS:-8}" --budget-min "${PREGEN_MINUTES:-25}" --asr-dir "$W" || { echo "تعذّر توليد الأصوات الجاهزة؛ سيُولَّد الصوت وقت التشغيل."; echo "pregen failed" > "$PRE/.failed"; }
+      "$PY" tools/pregen.py --voices "${PREGEN_VOICES:-9,1,3,6,7}" --steps "${PREGEN_STEPS:-8}" --budget-min "${PREGEN_MINUTES:-25}" --asr-dir "$W" || { echo "تعذّر توليد الأصوات الجاهزة؛ سيُولَّد الصوت وقت التشغيل."; echo "pregen failed" > "$PRE/.failed"; }
     else
       echo "تعذّر تثبيت sherpa-onnx لبايثون؛ سيُولَّد الصوت وقت التشغيل. (احذف $PRE/.failed لإعادة المحاولة)"; echo "pip failed" > "$PRE/.failed"
     fi

@@ -65,14 +65,16 @@
 </div>
 <div id="normal-settings" class="settings-page">
 <h3 class="grp">🎙️ الصوت</h3>
-<div class="opt"><label class="sfield"><b>اختيار الصوت</b><select id="voice-id"><option value="0">صوت 1</option><option value="1">صوت 2</option><option value="2">صوت 3</option><option value="3">صوت 4</option><option value="4">صوت 5</option><option value="5">صوت 6</option><option value="6">صوت 7</option><option value="7">صوت 8</option><option value="8">صوت 9</option><option value="9" selected>صوت 10 (الأوضح)</option></select></label></div>
+<div class="opt"><label class="sfield"><b>اختيار الصوت</b><select id="voice-id"><optgroup label="⚡ مدمجة — نطق سريع (فوري بلا انتظار)"><option value="9" selected>صوت 10 (الأوضح)</option><option value="1">صوت 2</option><option value="3">صوت 4</option><option value="6">صوت 7</option><option value="7">صوت 8</option></optgroup><optgroup label="🐢 غير مدمجة — نطق أبطأ (تُولَّد عند أول استخدام ثم تُحفظ)"><option value="0">صوت 1</option><option value="2">صوت 3</option><option value="4">صوت 5</option><option value="5">صوت 6</option><option value="8">صوت 9</option></optgroup></select></label></div>
 <div class="opt"><label class="sfield"><b>جودة النطق</b><select id="tts-quality"><option value="3">سريع</option><option value="4">متوازن</option><option value="6">أوضح (أبطأ)</option><option value="8" selected>الأعلى وضوحًا (الافتراضي)</option></select></label></div>
 <div class="opt"><label class="srow"><span class="st"><b>صوت النظام</b><small>استعمال صوت الجهاز إن وُجد</small></span><input id="system-voice" class="sw" type="checkbox"></label></div>
 <button id="test-voice" type="button" class="primary">🔊 جرّب الصوت</button>
 <h3 class="grp">🎚️ المستوى والسرعة</h3>
 <div class="opt"><label class="sfield"><span class="rl"><b>مستوى الصوت</b><output id="learning-volume-value">100%</output></span><input id="learning-volume-level" type="range" min="0" max="100" step="1" value="100"></label></div>
+<div class="opt"><label class="sfield"><b>خيارات السرعة</b><select id="speed-preset"><option value="0.7">بطيء</option><option value="0.9">طبيعي (الافتراضي)</option><option value="1.15">سريع</option><option value="custom">مخصص (حسب الشريط)</option></select></label></div>
 <div class="opt"><label class="sfield"><span class="rl"><b>سرعة النطق</b><output id="speech-speed-value">0.90</output></span><input id="speech-speed" type="range" min="0.6" max="1.2" step="0.05" value="0.9"></label>
-<p class="note">سرعة أقل تساعد الطفل على سماع الكلمات بوضوح. تغييرات الصوت تُطبَّق فورًا.</p></div>
+<p class="note">سرعة أقل تساعد الطفل على سماع الكلمات بوضوح. «طبيعي (الافتراضي)» هو السرعة الجاهزة المدمجة. تغييرات الصوت تُطبَّق فورًا.</p></div>
+<div class="opt"><label class="sfield"><b>طريقة تغيير السرعة</b><select id="speed-mode"><option value="0">تلقائي (ذكي)</option><option value="1">فوري</option><option value="2">أنقى جودة</option></select></label><p class="note">تلقائي: ينطق فورًا من الصوت الجاهز بالسرعة المطلوبة، ويجهّز النسخة الأنقى في الخلفية فتُسمع من المرة التالية. فوري: يعدّل سرعة الصوت الجاهز دائمًا (بلا انتظار، وجودة أقل قليلًا). أنقى جودة: يولّد النطق بالسرعة المطلوبة دائمًا (قد يتأخر في أول مرة).</p></div>
 <h3 class="grp">💾 الأصوات المجهَّزة</h3>
 <div class="opt"><div class="io"><button id="export-sounds" type="button">⬆️ تصدير الأصوات</button><button id="import-sounds" type="button">⬇️ استيراد الأصوات</button></div>
 <p class="note">التصدير يحفظ كل الأصوات المجهَّزة في ملف zip تختار مكانه (مثل التنزيلات). الاستيراد يدمج ملفًا مصدَّرًا سابقًا فلا يعيد التطبيق تجهيزها.</p></div>
@@ -86,4 +88,4 @@
 <p class="note">إن نسيتَ الرمز أو النمط فالحل الوحيد مسح بيانات التطبيق من إعدادات الجهاز.</p></div>
 <button id="reset-all" type="button">↺ إعادة الضبط الافتراضي</button>
 <button id="save-settings" class="primary">حفظ الإعدادات</button></div></section>
-<script src="speech-data.js?v=3"></script><script src="app.js?v=32"></script><script src="games.js?v=7"></script></main></body></html>
+<script src="speech-data.js?v=4"></script><script src="app.js?v=38"></script><script src="games.js?v=7"></script></main></body></html>

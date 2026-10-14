@@ -30,6 +30,7 @@ jobs:
         env:
           PREGEN_MINUTES: '270'
           PREGEN_STEPS: '8'
+          PREGEN_VOICES: '9,1,3,6,7'
         run: |
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           gradle --no-daemon -Dorg.gradle.jvmargs=-Xmx3g assembleDebug

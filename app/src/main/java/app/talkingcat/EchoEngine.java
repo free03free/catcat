@@ -78,6 +78,28 @@ final class EchoEngine {
     private volatile long lastFg = 0L;           // آخر وقت ضغط فيه الطفل (لإيقاف التجهيز الخلفي أثناء اللعب)
 
     void setVoice(int v) { voiceId = Math.max(0, Math.min(9, v)); }
+    /** طريقة السرعة: 0 تلقائي (ذكي) · 1 فوري (الصوت الجاهز + تعديل السرعة دائمًا) · 2 أنقى جودة (توليد بالسرعة المطلوبة دائمًا). */
+    private volatile int speedMode = 0;
+    void setSpeedMode(int m) { speedMode = Math.max(0, Math.min(2, m)); }
+    private final java.util.HashMap<Integer, java.util.HashMap<String, Integer>> preSpd = new java.util.HashMap<>();
+    /** سرعة المقطع الجاهز لهذا النص في الحزمة (نسبة مئوية، مثل 90)، أو 0 إن لم يوجد. */
+    private synchronized int preSpeedFor(String text) {
+        org.json.JSONObject o = preFor(voiceId);
+        if (o == null) return 0;
+        java.util.HashMap<String, Integer> m = preSpd.get(voiceId);
+        if (m == null) {
+            m = new java.util.HashMap<>();
+            java.util.Iterator<String> it = o.keys();
+            while (it.hasNext()) {
+                String k = it.next(); int i = k.indexOf('|');
+                if (i <= 0) continue;
+                try { String t = k.substring(i + 1); if (!m.containsKey(t)) m.put(t, Integer.parseInt(k.substring(0, i))); } catch (NumberFormatException ignored) {}
+            }
+            preSpd.put(voiceId, m);
+        }
+        Integer v = m.get(text);
+        return v == null ? 0 : v;
+    }
     void setSteps(int v) { steps = Math.max(2, Math.min(10, v)); }
     private LoudnessEnhancer enhancer;
 
@@ -574,6 +596,7 @@ final class EchoEngine {
                 String c0 = clean(texts[i]);
                 if (c0.isEmpty()) continue;
                 float sp0 = Math.max(0.6f, Math.min(1.3f, speeds[i]));
+                if (speedMode == 1 && preSpeedFor(c0) > 0) continue;   // وضع «فوري»: يكفي المقطع الجاهز، فلا نولّد نسخة أخرى
                 if (!isCached(keyOf(c0, sp0), c0, sp0)) { pt.add(c0); ps.add(sp0); }
             }
             final int total = pt.size();
@@ -678,6 +701,15 @@ final class EchoEngine {
                 if (c.isEmpty()) { fin(onFinished); return; }
                 float[] smp = null; int sr = 22050;
                 if (useSystem) { int[] r = {0}; smp = synthSystem(c, speed, r); if (smp != null) sr = r[0]; }
+                float tempoApply = 1.0f;
+                if (smp == null && speedMode != 2 && !hasPre(c, speed) && !isCached(keyOf(c, speed), c, speed)) {
+                    // ذكي: لا ننتظر التوليد؛ نأخذ المقطع الجاهز بسرعته ونعدّل السرعة وقت التشغيل دون تغيير النغمة
+                    int ps = preSpeedFor(c);
+                    if (ps > 0) {
+                        Clip pc = readPre(c, ps / 100f);
+                        if (pc != null) { smp = pc.s; sr = pc.rate; tempoApply = Math.max(0.6f, Math.min(1.5f, speed / (ps / 100f))); }
+                    }
+                }
                 if (smp == null) {
                     if (!canSpeak()) { cb.toast("صوت النطق العربي غير جاهز بعد."); fin(onFinished); return; }
                     List<String> parts = splitSentences(c);
@@ -688,7 +720,7 @@ final class EchoEngine {
                 if (smp == null || smp.length == 0) { fin(onFinished); return; }
                 short[] pcm = process(smp, sr, volume, true);
                 fgBusy.decrementAndGet();
-                try { playPcm(pcm, Math.round(sr * rateMul), delayMs, my, Math.max(0f, Math.min(1f, volume)), onFinished); }
+                try { playPcm(pcm, Math.round(sr * rateMul), delayMs, my, Math.max(0f, Math.min(1f, volume)), onFinished, tempoApply); }
                 finally { fgBusy.incrementAndGet(); }
             } catch (Throwable t) {
                 cb.report("خطأ في النطق", t.getClass().getSimpleName() + ": " + t.getMessage());
@@ -724,6 +756,10 @@ final class EchoEngine {
     }
 
     private void playPcm(short[] pcm, int rate, int delayMs, int my, float volume, Runnable onFinished) throws Exception {
+        playPcm(pcm, rate, delayMs, my, volume, onFinished, 1.0f);
+    }
+
+    private void playPcm(short[] pcm, int rate, int delayMs, int my, float volume, Runnable onFinished, float tempo) throws Exception {
         try { Thread.sleep(Math.max(0, Math.min(1000, delayMs))); } catch (InterruptedException e) { return; }
         if (my != gen.get()) return;
         AudioTrack t = new AudioTrack.Builder()
@@ -731,6 +767,7 @@ final class EchoEngine {
             .setAudioFormat(new AudioFormat.Builder().setEncoding(AudioFormat.ENCODING_PCM_16BIT).setSampleRate(rate).setChannelMask(AudioFormat.CHANNEL_OUT_MONO).build())
             .setBufferSizeInBytes(pcm.length * 2).setTransferMode(AudioTrack.MODE_STATIC).build();
         t.write(pcm, 0, pcm.length);
+        if (Math.abs(tempo - 1.0f) > 0.01f) { try { t.setPlaybackParams(new android.media.PlaybackParams().setSpeed(tempo).setPitch(1.0f)); } catch (Throwable ignored) {} }
         // لا نهمل مستوى الصوت الذي اختاره المستخدم. القيمة تُطبق على AudioTrack نفسه.
         t.setVolume(1.0f); // مستوى الصوت طُبّق داخل process()؛ لا تخفيض مزدوج هنا
         try { if (enhancer != null) enhancer.release(); enhancer = new LoudnessEnhancer(t.getAudioSessionId()); enhancer.setTargetGain(500); enhancer.setEnabled(true); } catch (Throwable ignored) { enhancer = null; }
@@ -738,7 +775,7 @@ final class EchoEngine {
         t.play();
         cb.emit("speaking", "1");
         try {
-            long limit = System.currentTimeMillis() + pcm.length * 1000L / rate + 2000;
+            long limit = System.currentTimeMillis() + (long) (pcm.length * 1000L / rate / Math.min(1f, tempo)) + 2000;
             while (my == gen.get() && t.getPlaybackHeadPosition() < pcm.length && System.currentTimeMillis() < limit) Thread.sleep(30);
         } finally {
             cb.emit("speaking", "0");

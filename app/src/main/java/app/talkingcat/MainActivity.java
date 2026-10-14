@@ -82,6 +82,7 @@ public class MainActivity extends Activity {
         @JavascriptInterface public void setSpeed(double v) { speed = (float) Math.max(0.6, Math.min(1.2, v)); }
         @JavascriptInterface public void setSystemVoice(boolean on) { engine.setUseSystem(on); }
         @JavascriptInterface public void setVoice(int v) { engine.setVoice(v); }
+        @JavascriptInterface public void setSpeedMode(int v) { engine.setSpeedMode(v); }
         @JavascriptInterface public void setSteps(int v) { engine.setSteps(v); }
         @JavascriptInterface public void stop() { engine.stop(); }
         @JavascriptInterface public void exportSounds() {
