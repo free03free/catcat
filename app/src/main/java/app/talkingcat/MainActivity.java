@@ -26,6 +26,7 @@ public class MainActivity extends Activity {
     private volatile float speed = 0.95f;
     private volatile float volume = 1.0f;
     private volatile boolean paused = false;
+    private static final int REQ_EXPORT = 7101, REQ_IMPORT = 7102;
     private static final long IDLE_MS = 10L * 60 * 1000;   // الشاشة تبقى مضاءة حتى 10 دقائق بلا لمس ولا نشاط داخل التطبيق
     private final android.os.Handler idleH = new android.os.Handler(android.os.Looper.getMainLooper());
     private final Runnable idleOff = () -> getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -83,6 +84,27 @@ public class MainActivity extends Activity {
         @JavascriptInterface public void setVoice(int v) { engine.setVoice(v); }
         @JavascriptInterface public void setSteps(int v) { engine.setSteps(v); }
         @JavascriptInterface public void stop() { engine.stop(); }
+        @JavascriptInterface public void exportSounds() {
+            runOnUiThread(() -> {
+                try {
+                    android.content.Intent i = new android.content.Intent(android.content.Intent.ACTION_CREATE_DOCUMENT);
+                    i.addCategory(android.content.Intent.CATEGORY_OPENABLE);
+                    i.setType("application/zip");
+                    i.putExtra(android.content.Intent.EXTRA_TITLE, "talkingcat-sounds.zip");
+                    startActivityForResult(i, REQ_EXPORT);
+                } catch (Throwable t) { toastJs("تعذّر فتح نافذة الحفظ"); }
+            });
+        }
+        @JavascriptInterface public void importSounds() {
+            runOnUiThread(() -> {
+                try {
+                    android.content.Intent i = new android.content.Intent(android.content.Intent.ACTION_OPEN_DOCUMENT);
+                    i.addCategory(android.content.Intent.CATEGORY_OPENABLE);
+                    i.setType("*/*");
+                    startActivityForResult(i, REQ_IMPORT);
+                } catch (Throwable t) { toastJs("تعذّر فتح نافذة الاختيار"); }
+            });
+        }
         @JavascriptInterface public void warm(String json) {
             try {
                 org.json.JSONArray a = new org.json.JSONArray(json);
@@ -167,6 +189,27 @@ public class MainActivity extends Activity {
         web.onResume();
     }
     @Override protected void onDestroy(){ if(engine!=null)engine.shutdown();web.destroy();super.onDestroy();}
+
+    @Override protected void onActivityResult(int req, int res, android.content.Intent data) {
+        super.onActivityResult(req, res, data);
+        if ((req != REQ_EXPORT && req != REQ_IMPORT) || res != RESULT_OK || data == null || data.getData() == null) return;
+        final Uri u = data.getData();
+        final boolean export = req == REQ_EXPORT;
+        toastJs(export ? "جارٍ تصدير الأصوات…" : "جارٍ استيراد الأصوات…");
+        new Thread(() -> {
+            try {
+                int n;
+                if (export) {
+                    try (java.io.OutputStream os = getContentResolver().openOutputStream(u)) { n = engine.exportPack(os); }
+                    toastJs("تم تصدير " + n + " صوتًا ✓");
+                } else {
+                    try (InputStream is = getContentResolver().openInputStream(u)) { n = engine.importPack(is); }
+                    toastJs(n > 0 ? "تم استيراد " + n + " صوتًا ✓" : "الملف لا يحوي أصواتًا صالحة");
+                    runJs("window.onSoundsImported && window.onSoundsImported();");
+                }
+            } catch (Throwable t) { toastJs((export ? "تعذّر التصدير: " : "تعذّر الاستيراد: ") + t.getMessage()); }
+        }, "sounds-io").start();
+    }
 
     private void toastJs(String msg) {
         runJs("window.onNativeToast && window.onNativeToast(" + org.json.JSONObject.quote(msg) + ");");

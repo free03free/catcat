@@ -15,7 +15,7 @@ let features=Object.assign({harakat:true,madd:true,words:true,quiz:true},JSON.pa
 let selectedNumber=1,selectedLetter=0,selectedColor=0,quizAnswer="",quizActive=false;
 let heard="",pokes=0,pokeT=0,idleAt=Date.now(),talkDog=0;
 pushNativePrefs();
-const {letters,colors,lessonWords,numberWord,ones,tens,words:LETTER_WORDS,SAY:LS_SAY,SAY_SOLO:LS_SOLO=window.CatSpeech.SAY_SOLO||{},harakat:mkHarakat,madds:mkMadds,sylKind}=window.CatSpeech; // المصدر الوحيد للنصوص: speech-data.js
+const {letters,colors,lessonWords,numberWord,ones,tens,words:LETTER_WORDS,SAY:LS_SAY,SAY_SOLO:LS_SOLO=window.CatSpeech.SAY_SOLO||{},harakat:mkHarakat,madds:mkMadds,sylKind,showSyl}=window.CatSpeech; // المصدر الوحيد للنصوص: speech-data.js
 const $=id=>document.getElementById(id);
 function showSpeech(t){const s2=$("speech2");if(s2)s2.textContent=t}
 const catEls=()=>[$("cat2")];
@@ -85,20 +85,19 @@ function prefetchAll(){
  try{TomNative.prefetch(JSON.stringify(items))}catch(e){}
 }
 let prefetchT=null;function schedulePrefetch(){clearTimeout(prefetchT);prefetchT=setTimeout(prefetchAll,1800)}
-function addMini(parent,text,extra,label){const b=document.createElement("button");b.type="button";b.className="mini-item"+(extra?" "+extra:"");const t=document.createElement("span");t.className="mi-t";t.textContent=text;b.appendChild(t);if(label){const s=document.createElement("small");s.className="mi-l";s.textContent=label;b.appendChild(s);b.setAttribute("aria-label",label+" "+text)}b.onclick=()=>speakLearning(text);parent.appendChild(b);return b}
+function addMini(parent,text,extra,label){const b=document.createElement("button");b.type="button";b.className="mini-item"+(extra?" "+extra:"");const t=document.createElement("span");t.className="mi-t";t.textContent=showSyl(text);b.appendChild(t);if(label)b.setAttribute("aria-label",label+" "+showSyl(text));b.onclick=()=>speakLearning(text);parent.appendChild(b);return b}
+function renderHkLetters(){const g=$("hk-letter-grid");if(!g)return;g.innerHTML="";letters.forEach((x,i)=>{const b=document.createElement("button");b.type="button";b.className="letter"+(i===selectedLetter?" selected":"");b.textContent=x[0];b.onclick=()=>{selectedLetter=i;g.querySelectorAll(".letter").forEach(y=>y.classList.remove("selected"));b.classList.add("selected");document.querySelectorAll("#letter-grid .letter").forEach((y,k)=>y.classList.toggle("selected",k===i));$("letter-detail").textContent=x[0]+" — "+x[1];renderLetterLessons();speakLearning(x[1])};g.appendChild(b)});$("hk-detail").textContent=letters[selectedLetter][0]+" — "+letters[selectedLetter][1]}
 function renderLetterLessons(){
  const l=currentLetter(),i=selectedLetter,h=$("harakat-grid"),m=$("madd-grid"),w=$("word-grid");h.innerHTML="";m.innerHTML="";w.innerHTML="";
  const hk=mkHarakat(l),md=mkMadds(l);
  hk.forEach(x=>addMini(h,x[0],"",x[1]));md.forEach(x=>addMini(m,x[0],"",x[1]));
  LETTER_WORDS[i].forEach(x=>{const b=addMini(w,x);b.classList.add("word-item")});
- h.parentElement.querySelector("h3").textContent="الحركات: "+hk.map(x=>x[0]).join("  ");
- m.parentElement.querySelector("h3").textContent="المدود: "+md.map(x=>x[0]).join("  ");
  quizActive=false;quizAnswer="";$("quiz-options").innerHTML="";$("quiz-prompt").textContent="اضغط «ابدأ» ثم استمع واختر ما سمعت.";
  $("harakat-grid").parentElement.hidden=!features.harakat;$("madd-grid").parentElement.hidden=!features.madd;$("word-grid").parentElement.hidden=!features.words;$("start-quiz").parentElement.hidden=!features.quiz;
 }
-function renderLetters(){const g=$("letter-grid");g.innerHTML="";letters.forEach((x,i)=>{const b=document.createElement("button");b.className="letter"+(i===selectedLetter?" selected":"");b.textContent=x[0];b.onclick=()=>{selectedLetter=i;document.querySelectorAll(".letter").forEach(y=>y.classList.remove("selected"));b.classList.add("selected");$("letter-detail").textContent=x[0]+" — "+x[1];renderLetterLessons();speakLearning(x[1]);};g.appendChild(b)});$("letter-detail").textContent=letters[0][0]+" — "+letters[0][1];renderLetterLessons()}
+function renderLetters(){const g=$("letter-grid");g.innerHTML="";letters.forEach((x,i)=>{const b=document.createElement("button");b.className="letter"+(i===selectedLetter?" selected":"");b.textContent=x[0];b.onclick=()=>{selectedLetter=i;document.querySelectorAll(".letter").forEach(y=>y.classList.remove("selected"));b.classList.add("selected");$("letter-detail").textContent=x[0]+" — "+x[1];selectedLetter=i;renderHkLetters();renderLetterLessons();speakLearning(x[1]);};g.appendChild(b)});$("letter-detail").textContent=letters[0][0]+" — "+letters[0][1];renderLetterLessons()}
 function renderColors(){const g=$("color-grid");g.innerHTML="";colors.forEach((x,i)=>{const b=document.createElement("button");b.className="color-card"+(i===selectedColor?" selected":"");b.innerHTML='<div class="swatch" style="background:'+x[1]+'"></div>'+x[0];b.onclick=()=>{selectedColor=i;document.querySelectorAll(".color-card").forEach(y=>y.classList.remove("selected"));b.classList.add("selected");talk(x[0]);};g.appendChild(b)})}
-function startQuiz(){const l=currentLetter(),pool=mkHarakat(l).concat(mkMadds(l)).map(x=>x[0]);quizAnswer=pool[Math.floor(Math.random()*pool.length)];quizActive=true;$("quiz-prompt").textContent="استمع جيدًا ثم اختر ما سمعت. (اضغط هنا لتسمع مرة أخرى)";{const a=learnArgs(quizAnswer);talk(a[0],a[1])}const options=$("quiz-options");options.innerHTML="";const set=[quizAnswer];while(set.length<4){const x=pool[Math.floor(Math.random()*pool.length)];if(!set.includes(x))set.push(x)}set.sort(()=>Math.random()-0.5);set.forEach(x=>{const b=document.createElement("button");b.type="button";b.className="quiz-option";b.textContent=x;b.onclick=()=>{if(!quizActive||b.classList.contains("wrong"))return;if(x===quizAnswer){quizActive=false;b.classList.add("correct");$("quiz-prompt").textContent="أحسنت! ⭐ إجابة صحيحة";talk("أَحْسَنْتَ",0.9)}else{b.classList.add("wrong");$("quiz-prompt").textContent="حاول مرة أخرى 🔄";const a=learnArgs(quizAnswer);talk(a[0],a[1])}};options.appendChild(b)})}
+function startQuiz(){const l=currentLetter(),pool=mkHarakat(l).concat(mkMadds(l)).map(x=>x[0]);quizAnswer=pool[Math.floor(Math.random()*pool.length)];quizActive=true;$("quiz-prompt").textContent="استمع جيدًا ثم اختر ما سمعت. (اضغط هنا لتسمع مرة أخرى)";{const a=learnArgs(quizAnswer);talk(a[0],a[1])}const options=$("quiz-options");options.innerHTML="";const set=[quizAnswer];while(set.length<4){const x=pool[Math.floor(Math.random()*pool.length)];if(!set.includes(x))set.push(x)}set.sort(()=>Math.random()-0.5);set.forEach(x=>{const b=document.createElement("button");b.type="button";b.className="quiz-option";b.textContent=showSyl(x);b.onclick=()=>{if(!quizActive||b.classList.contains("wrong"))return;if(x===quizAnswer){quizActive=false;b.classList.add("correct");$("quiz-prompt").textContent="أحسنت! ⭐ إجابة صحيحة";talk("أَحْسَنْتَ",0.9)}else{b.classList.add("wrong");$("quiz-prompt").textContent="حاول مرة أخرى 🔄";const a=learnArgs(quizAnswer);talk(a[0],a[1])}};options.appendChild(b)})}
 function replayQuiz(){if(quizActive&&quizAnswer){const a=learnArgs(quizAnswer);talk(a[0],a[1])}}
 function speakCurrent(){const t=document.querySelector(".tab.active"),p=t?t.dataset.page:"numbers";if(p==="numbers")talk(numberWord(selectedNumber));else if(p==="letters")speakLearning(letters[selectedLetter][1]);else talk(colors[selectedColor][0])}
 // ===== الوضع الثالث: وضع الدروس (حرف + صورة + كلمة) =====
@@ -140,7 +139,7 @@ function lsOpen(i,say){
  if(say)lsSay("both");
 }
 (function lsInit(){
- $("lessons-mode").onclick=()=>setMode("lessons");
+ $("lessons-mode").onclick=()=>setMode("lessons");$("harakat-mode").onclick=()=>setMode("harakat");
  $("ls-prev").onclick=()=>lsOpen(lsIdx-1,true);
  $("ls-next").onclick=()=>lsOpen(lsIdx+1,true);
  $("ls-letter").onclick=()=>lsSay("name");
@@ -151,8 +150,8 @@ function lsOpen(i,say){
 })();
 
 function setMode(mode,silent){const study=mode==="learning",letterMode=mode==="lessons";
- ["learning","lessons"].forEach(m=>{$(m).classList.toggle("active",m===mode);$(m+"-mode").classList.toggle("active",m===mode)});
- $("subtitle").textContent=letterMode?"نتعلّم الحروف مع الصور":"اضغط على القط ليكرر الدرس";
+ ["learning","lessons","harakat"].forEach(m=>{$(m).classList.toggle("active",m===mode);$(m+"-mode").classList.toggle("active",m===mode)});
+ $("subtitle").textContent=letterMode?"نتعلّم الحروف مع الصور":mode==="harakat"?"الحركات والمدود والكلمات":"اضغط على القط ليكرر الدرس";
  pushNativePrefs();
  if(silent)return;
  }
@@ -258,6 +257,9 @@ function resetOne(id){const e=$(id);if(!e)return;if(e.type==="checkbox")e.checke
  new MutationObserver(()=>{const v=parseInt(mn.value,10);if(Number.isFinite(v))last=clamp(v);sync()}).observe($("settings"),{attributes:true,attributeFilter:["hidden"]});
 })();
 $("reset-all").onclick=()=>{Object.keys(SET_DEF).forEach(resetOne);$("save-settings").onclick()};
+$("export-sounds").onclick=()=>{try{TomNative.exportSounds()}catch(e){}};
+$("import-sounds").onclick=()=>{try{TomNative.importSounds()}catch(e){}};
+window.onSoundsImported=function(){schedulePrefetch()};
 /* ---- كل خيار في بطاقة مستقلة، وتحته الافتراضي وزر استعادته ---- */
 (function(){
  const DEF_LABEL={"speech-speed":"0.90","voice-id":"صوت 10 (الأوضح)","tts-quality":"الأعلى وضوحًا","system-voice":"مُعطَّل","learning-volume-level":"100%","max-number":"10","enable-harakat":"مفعَّل","enable-madd":"مفعَّل","enable-words":"مفعَّل","enable-quiz":"مفعَّل"};
@@ -283,5 +285,5 @@ $("reset-all").onclick=()=>{Object.keys(SET_DEF).forEach(resetOne);$("save-setti
  refresh();
 })();
 $("test-voice").onclick=()=>{applyLive();talk("مَرْحَبًا أَنَا القِطُّ المُتَكَلِّم",speechSpeed)};
-renderNumbers();renderLetters();renderColors();bind();bindCat($("cat2"));startIdle();setMode("learning",true);
+renderNumbers();renderLetters();renderHkLetters();renderLetterLessons();renderColors();bind();bindCat($("cat2"));startIdle();setMode("learning",true);
 })();

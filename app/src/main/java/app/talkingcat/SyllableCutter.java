@@ -19,7 +19,8 @@ final class SyllableCutter {
     static boolean isMadd(String t) { return t != null && MADD.matcher(t).matches(); }
     static boolean isSyllable(String t) { return isShort(t) || isMadd(t); }
 
-    static String carrier(String t) { return isShort(t) ? "حرف " + t + "، كرر: " + t : "مد: " + t; }
+    // بلا أي كلمة («حرف»، «كرر»، «مد») كي لا تتسرب إلى الصوت: ثلاثة مقاطع بينها فواصل، ونأخذ الأخير
+    static String carrier(String t) { return t + " ، ، " + t + " ، ، " + t; }
 
     /** يقتطع آخر مقطع منطوق من الصوت؛ يعيد null إن لم تكن مدته معقولة (0.12–1.2 ث) فيُعاد التوليد بلا حامل. */
     static float[] cutLast(float[] s, int sr) {
@@ -59,6 +60,6 @@ final class SyllableCutter {
             }
         }
         double dur = (end + 1 - start) * 0.01;
-        return (dur >= 0.12 && dur <= 1.2) ? seg : null;
+        return (dur >= 0.12 && dur <= 0.9) ? seg : null;
     }
 }

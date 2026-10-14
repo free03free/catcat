@@ -288,6 +288,45 @@ final class EchoEngine {
         } catch (Throwable ignored) {}
     }
 
+    /** يضغط كل الأصوات المجهَّزة (ملفات pcm) في zip ويكتبها في المجرى؛ يعيد عددها. */
+    int exportPack(java.io.OutputStream os) throws java.io.IOException {
+        java.util.zip.ZipOutputStream z = new java.util.zip.ZipOutputStream(new java.io.BufferedOutputStream(os, 64 * 1024));
+        z.setLevel(1);
+        byte[] buf = new byte[64 * 1024];
+        int n = 0;
+        File[] fs = cacheDir().listFiles();
+        if (fs != null) for (File f : fs) {
+            if (!f.isFile() || !f.getName().endsWith(".pcm")) continue;
+            z.putNextEntry(new java.util.zip.ZipEntry(f.getName()));
+            try (java.io.FileInputStream in = new java.io.FileInputStream(f)) {
+                int r; while ((r = in.read(buf)) > 0) z.write(buf, 0, r);
+            }
+            z.closeEntry(); n++;
+        }
+        z.finish(); z.flush();
+        return n;
+    }
+
+    /** يدمج zip أصوات مصدَّرًا سابقًا في المجلد (يستبدل المتشابه)؛ يعيد عدد الملفات المدمجة. */
+    int importPack(java.io.InputStream is) throws java.io.IOException {
+        java.util.zip.ZipInputStream z = new java.util.zip.ZipInputStream(new java.io.BufferedInputStream(is, 64 * 1024));
+        File dir = cacheDir();
+        byte[] buf = new byte[64 * 1024];
+        int n = 0;
+        java.util.zip.ZipEntry e;
+        while ((e = z.getNextEntry()) != null) {
+            String name = e.getName();
+            if (e.isDirectory() || !name.matches("[0-9a-f]{1,40}\\.pcm")) continue;   // أسماء آمنة فقط
+            File f = new File(dir, name), tmp = new File(dir, name + ".tmp");
+            try (java.io.FileOutputStream out = new java.io.FileOutputStream(tmp)) {
+                int r; while ((r = z.read(buf)) > 0) out.write(buf, 0, r);
+            }
+            if (!tmp.renameTo(f)) { f.delete(); tmp.renameTo(f); }
+            n++;
+        }
+        return n;
+    }
+
     private File cacheFile(String key) {
         try {
             byte[] h = MessageDigest.getInstance("SHA-1").digest(key.getBytes("UTF-8"));

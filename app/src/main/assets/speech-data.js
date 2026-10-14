@@ -25,6 +25,9 @@
     if (kind === "u") return l + DAMMA + "و";
     return (l === "أ" ? "إ" : l) + KASRA + "ي";
   }
+  // عرض المقطع للطفل: السكون يُكتب على الحرف وحده (ثْ) وإن كان نطقه بحرف مساعد (أَثْ)
+  var RE_SUKUN_SHOW = /^\u0623\u064E([\u0621-\u064A])\u0652$/;
+  function showSyl(t) { var m = RE_SUKUN_SHOW.exec(String(t || "")); return m ? m[1] + SUKUN : t; }
   function harakat(l) {
     return [
       [vowelSyl(l, FATHA), "فَتْحَة"], [vowelSyl(l, KASRA), "كَسْرَة"],
@@ -84,20 +87,20 @@
     if (n === 12) return "اِثْنَا عَشَر";
     if (n < 20) return U[n - 10] + FATHA + " عَشَر";
     if (n < 100) { var u = n % 10, t = Math.floor(n / 10); return u ? U[u] + " " + waw(T[t]) : T[t]; }
-    if (n < 1000) { var h = Math.floor(n / 100), r = n % 100; return r ? H[h] + " " + waw(numberWord(r)) : H[h]; }
+    if (n < 1000) { var h = Math.floor(n / 100), r = n % 100; return r ? H[h] + " " + waw(numberWord(r)) : H[h].replace(/مِائَة$/, "مِائَه"); }  // المئة التامة: وقف بالهاء (مِائَه) وإلا نطقها المحرك «مئت»
     if (n === 1000) return "أَلْف";
     return String(n);
   }
 
   /* نطق خاص بكلمات يخطئ فيها المحرك عند ختمها بتاء مربوطة */
-  var SAY = { "نَحْلَة": "نَحْلَه" };
+  var SAY = { "نَحْلَة": "نَحْلَه", "غَيْمَة": "غَيْمَه" };
 
   /* كلمات يخطئ المحرك في نطقها منفردة؛ تُنطق مع اسم الحرف كما في «الحرف، الكلمة» الذي ينطقها صحيحًا (مقطع جاهز أصلًا) */
-  var SAY_SOLO = { "غَيْمَة": "غَيْن، غَيْمَة" };
+  var SAY_SOLO = {};
 
   var api = {
     letters: letters, colors: colors, words: words, lessonWords: lessonWords, pics: pics,
-    harakat: harakat, madds: madds, vowelSyl: vowelSyl, sukunSyl: sukunSyl, maddSyl: maddSyl, sylKind: sylKind,
+    harakat: harakat, madds: madds, vowelSyl: vowelSyl, sukunSyl: sukunSyl, maddSyl: maddSyl, sylKind: sylKind, showSyl: showSyl,
     ones: ones, tens: tens, numberWord: numberWord, SAY: SAY, SAY_SOLO: SAY_SOLO
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;

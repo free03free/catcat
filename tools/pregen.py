@@ -26,6 +26,7 @@ ap.add_argument("--steps", type=int, default=8)
 ap.add_argument("--jobs", type=int, default=os.cpu_count() or 2)
 ap.add_argument("--bitrate", default="48k")
 ap.add_argument("--budget-min", type=float, default=0, help="أقصى مدة بالدقائق في هذه الدورة (0 = بلا حد)")
+ap.add_argument("--max-num", type=int, default=0, help="الاكتفاء بالأرقام حتى هذا الحد (0 = كلها حتى 1000)")
 ap.add_argument("--start", type=int, default=0, help="للتجربة فقط")
 ap.add_argument("--limit", type=int, default=0, help="للتجربة فقط")
 ap.add_argument("--asr-dir", default=os.path.join(os.environ.get("CAT_CACHE") or os.path.expanduser("~/.cache/talking-cat-engine"), "whisper-small"))
@@ -83,7 +84,7 @@ def syl_kind(c):
     return ""
 def syl_letter(c):  # الحرف الذي يجب أن يسمعه التحقق: في «أَبْ» هو الباء لا الهمزة
     return c[2] if RE_SUKUN.match(c) else ("\u0627" if c == "\u0622" else c[0])
-def carrier(c): return f"حرف {c}، كرر: {c}" if syl_kind(c) == "short" else f"مد: {c}"
+def carrier(c): return f"{c} ، ، {c} ، ، {c}"  # بلا كلمات تتسرب إلى الصوت؛ نأخذ المقطع الأخير
 
 def cut_last(s, sr, gap_ms=90):
     fr = int(sr * 0.01); n = len(s) // fr
@@ -102,7 +103,7 @@ def cut_last(s, sr, gap_ms=90):
     a = max(0, start * fr - int(sr * 0.04)); b = min(len(s), (end + 1) * fr + int(sr * 0.12))
     seg = s[a:b].copy(); f = int(sr * 0.006)
     if len(seg) > 2 * f: seg[:f] *= np.linspace(0, 1, f).astype(np.float32); seg[-f:] *= np.linspace(1, 0, f).astype(np.float32)
-    return seg, (0.12 <= (end + 1 - start) * 0.01 <= 1.2)
+    return seg, (0.12 <= (end + 1 - start) * 0.01 <= 0.9)
 
 def score(expected, n, got):
     g = norm(got).replace(" ", "")
@@ -115,6 +116,7 @@ def score(expected, n, got):
     return difflib.SequenceMatcher(None, e, g).ratio()
 
 items = json.load(open(os.path.join(here, "lessons.json"), encoding="utf-8"))
+if a.max_num: items = [r for r in items if len(r) < 3 or r[2] <= a.max_num]
 if a.start or a.limit: items = items[a.start:(a.start + a.limit) if a.limit else None]
 T0 = time.time()
 DEADLINE = T0 + a.budget_min * 60 if a.budget_min else 0
@@ -177,7 +179,10 @@ def work(voice):
             else: s, okdur = trim(raw, r.sample_rate), True
             if r.sample_rate != 22050: s = resample_poly(s, 22050, r.sample_rate).astype(np.float32)
             if not rec: best = (s, 1.0, ""); break
-            heard = transcribe(s, 22050)
+            # المقطع القصير (0.2 ث) لا يستطيع Whisper سماعه منفردًا؛ نكرره ثلاثًا بفواصل للتحقق فقط (الملف المحفوظ هو المقطع وحده)
+            if syl:
+                gp = np.zeros(int(22050 * 0.35), dtype=np.float32); heard = transcribe(np.concatenate([s, gp, s, gp, s]), 22050)
+            else: heard = transcribe(s, 22050)
             sc = (0.0 if not okdur else (1.0 if norm(syl_letter(c)) in norm(heard) else 0.5)) if syl else score(c, num, heard)
             if best is None or sc > best[1]: best = (s, sc, heard)
             if sc >= a.accept: break

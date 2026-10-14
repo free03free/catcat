@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
-<meta name="theme-color" content="#fff4dc"><title>قط متكلم</title><link rel="stylesheet" href="styles.css?v=27">
+<meta name="theme-color" content="#fff4dc"><title>قط متكلم</title><link rel="stylesheet" href="styles.css?v=29">
 </head>
 <body class="lessons-on"><svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
 <radialGradient id="gHead" cx=".35" cy=".28" r=".85"><stop offset="0" stop-color="#c9d1da"/><stop offset=".55" stop-color="#96a2b1"/><stop offset="1" stop-color="#6f7c8d"/></radialGradient>
@@ -10,7 +10,7 @@
 <radialGradient id="gIris" cx=".4" cy=".35" r=".8"><stop offset="0" stop-color="#c4ec78"/><stop offset="1" stop-color="#5fa823"/></radialGradient>
 </defs></svg><main class="app">
 <header class="topbar"><div><h1>🐱 قط متكلم</h1><p id="subtitle"></p></div><button id="gear" class="icon-btn" aria-label="الإعدادات">⚙️</button></header>
-<section class="mode-switch"><button id="learning-mode" class="mode active">📚 التعلم</button><button id="lessons-mode" class="mode">🔤 الدروس</button></section>
+<section class="mode-switch"><button id="learning-mode" class="mode active">📚 التعلم</button><button id="lessons-mode" class="mode">🔤 الدروس</button><button id="harakat-mode" class="mode">✨ الحركات</button></section>
 <section id="learning" class="mode-page active"><div id="mini-bar" class="mini-bar"><div class="fx" id="fx2"></div><button id="mini-cat-btn" class="mini-cat-btn" aria-label="اضغط على القط ليكرر"><span class="scaler"><span id="cat2" class="cat" aria-hidden="true"><svg viewBox="0 0 210 235" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
 <ellipse cx="105" cy="231" rx="64" ry="5" fill="#0000001f"/>
 <g class="c-tail"><path d="M148 214C200 214 214 160 184 132" fill="none" stroke="#4d5866" stroke-width="25" stroke-linecap="round"/><path d="M148 214C200 214 214 160 184 132" fill="none" stroke="#8994a3" stroke-width="18" stroke-linecap="round"/><path d="M148 214C200 214 214 160 184 132" fill="none" stroke="#5f6a77" stroke-width="18" stroke-dasharray="5 15"/></g>
@@ -31,13 +31,14 @@
 <nav class="tabs"><button class="tab active" data-page="numbers">🔢 الأرقام</button><button class="tab" data-page="letters">🔤 الحروف</button><button class="tab" data-page="colors">🎨 الألوان</button></nav>
 <section id="numbers" class="page active"><div class="page-head"><h2>🔢 تعلّم الأرقام</h2><button id="speak-number" class="speak">🔊 نطق</button></div><p class="hint">اختر رقمًا وسينطقه القط بوضوح.</p><div id="number-grid" class="grid number-grid"></div></section>
 <section id="letters" class="page"><div class="page-head"><h2>🔤 الحروف العربية</h2><button id="speak-letter" class="speak">🔊 نطق</button></div><p class="hint">اختر الحرف ثم اضغط على الأصوات.</p><div id="letter-grid" class="grid letter-grid"></div><div id="letter-detail" class="detail"></div>
-<div class="lesson-tools">
+</section>
+<section id="colors" class="page"><div class="page-head"><h2>🎨 تعلّم الألوان</h2><button id="speak-color" class="speak">🔊 نطق</button></div><p class="hint">اضغط على اللون ليسمع الطفل اسمه.</p><div id="color-grid" class="color-grid"></div></section></section>
+<section id="harakat" class="mode-page"><div class="hk-wrap"><h3 class="ls-h">اختر الحرف</h3><div id="hk-letter-grid" class="grid letter-grid"></div><div id="hk-detail" class="detail"></div><div class="lesson-tools">
 <div class="lesson-box lb-harakat"><h3>الحركات</h3><div id="harakat-grid" class="mini-grid"></div></div>
 <div class="lesson-box lb-madd"><h3>المدود</h3><div id="madd-grid" class="mini-grid"></div></div>
 <div class="lesson-box lb-words"><h3>كلمات</h3><div id="word-grid" class="word-grid"></div></div>
 <div class="lesson-box quiz-box"><h3>🎧 اسمع واختر</h3><p id="quiz-prompt" class="quiz-prompt">اضغط «ابدأ» ثم استمع واختر ما سمعت.</p><div id="quiz-options" class="quiz-options"></div><button id="start-quiz" class="speak">▶️ ابدأ</button></div>
-</div></section>
-<section id="colors" class="page"><div class="page-head"><h2>🎨 تعلّم الألوان</h2><button id="speak-color" class="speak">🔊 نطق</button></div><p class="hint">اضغط على اللون ليسمع الطفل اسمه.</p><div id="color-grid" class="color-grid"></div></section></section>
+</div></div></section>
 <section id="lessons" class="mode-page"><div class="ls-wrap">
 <div id="ls-card" class="ls-card">
 <div class="ls-top"><span id="ls-count" class="ls-count"></span></div>
@@ -71,7 +72,11 @@
 <h3 class="grp">🎚️ المستوى والسرعة</h3>
 <div class="opt"><label class="sfield"><span class="rl"><b>مستوى الصوت</b><output id="learning-volume-value">100%</output></span><input id="learning-volume-level" type="range" min="0" max="100" step="1" value="100"></label></div>
 <div class="opt"><label class="sfield"><span class="rl"><b>سرعة النطق</b><output id="speech-speed-value">0.90</output></span><input id="speech-speed" type="range" min="0.6" max="1.2" step="0.05" value="0.9"></label>
-<p class="note">سرعة أقل تساعد الطفل على سماع الكلمات بوضوح. تغييرات الصوت تُطبَّق فورًا.</p></div></div>
+<p class="note">سرعة أقل تساعد الطفل على سماع الكلمات بوضوح. تغييرات الصوت تُطبَّق فورًا.</p></div>
+<h3 class="grp">💾 الأصوات المجهَّزة</h3>
+<div class="opt"><div class="io"><button id="export-sounds" type="button">⬆️ تصدير الأصوات</button><button id="import-sounds" type="button">⬇️ استيراد الأصوات</button></div>
+<p class="note">التصدير يحفظ كل الأصوات المجهَّزة في ملف zip تختار مكانه (مثل التنزيلات). الاستيراد يدمج ملفًا مصدَّرًا سابقًا فلا يعيد التطبيق تجهيزها.</p></div>
+</div>
 <div id="lock-settings" class="settings-page">
 <p class="note">الإعدادات محمية دائمًا بسؤال حسابي للكبار. يمكنك استبداله برمز سري أو بنمط.</p>
 <div class="sec"><div class="sec-t">🔢 رمز سري</div>
@@ -81,4 +86,4 @@
 <p class="note">إن نسيتَ الرمز أو النمط فالحل الوحيد مسح بيانات التطبيق من إعدادات الجهاز.</p></div>
 <button id="reset-all" type="button">↺ إعادة الضبط الافتراضي</button>
 <button id="save-settings" class="primary">حفظ الإعدادات</button></div></section>
-<script src="speech-data.js?v=2"></script><script src="app.js?v=30"></script><script src="games.js?v=7"></script></main></body></html>
+<script src="speech-data.js?v=3"></script><script src="app.js?v=32"></script><script src="games.js?v=7"></script></main></body></html>
