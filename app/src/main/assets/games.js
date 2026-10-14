@@ -406,7 +406,7 @@ lsScr.innerHTML='<header class="ls-top"><button id="ls-back" class="gms-x" type=
  '<nav class="ls-tabs">'+Object.keys(LSK).map(k=>'<button type="button" class="ls-tab" data-k="'+k+'">'+LSK[k].ico+" "+LSK[k].label+'</button>').join("")+'</nav>'+
  '<div class="ls-bar"><i id="ls-prog"></i></div>'+
  '<main id="ls-stage" class="ls-stage"></main>'+
- '<div class="ls-ctl"><button id="lsx-prev" class="ls-b" type="button" aria-label="السابق">⏮</button><button id="lsx-play" class="ls-b main" type="button" aria-label="تشغيل"></button><button id="lsx-next" class="ls-b" type="button" aria-label="التالي">⏭</button></div>';
+ '<div class="ls-ctl"><button id="lsx-prev" class="ls-b" type="button" aria-label="التالي">⏮</button><button id="lsx-play" class="ls-b main" type="button" aria-label="تشغيل"></button><button id="lsx-next" class="ls-b" type="button" aria-label="السابق">⏭</button></div>';
 document.body.appendChild(lsScr);
 
 let ls=null;
@@ -455,8 +455,9 @@ function lsClose(){
 }
 [].slice.call(lsScr.querySelectorAll(".ls-tab")).forEach(b=>{b.onclick=()=>lsStart(b.dataset.k)});
 $("ls-back").onclick=lsClose;
-$("lsx-next").onclick=()=>{if(ls)lsGo(ls.i+1)};
-$("lsx-prev").onclick=()=>{if(ls)lsGo(ls.i-1)};
+/* الزر الأيسر (⏮) = التالي، والأيمن (⏭) = السابق، بما يوافق اتجاه القراءة العربي */
+$("lsx-next").onclick=()=>{if(ls)lsGo(ls.i-1)};
+$("lsx-prev").onclick=()=>{if(ls)lsGo(ls.i+1)};
 $("lsx-play").onclick=()=>{
  if(!ls)return;
  if(ls.done){ls.playing=true;lsGo(0);return}
