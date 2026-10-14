@@ -531,7 +531,7 @@ final class EchoEngine {
                 // النموذج ينطق المقطع المنفرد بشكل رديء؛ نولّد «حرف بَ، كرر: بَ» ونأخذ آخر مقطع فقط
                 GeneratedAudio ca = t.generateWithConfig(SyllableCutter.carrier(text), g);
                 float[] raw = ca == null ? null : ca.getSamples();
-                if (raw != null && raw.length > 0) syllable = SyllableCutter.cutLast(raw, ca.getSampleRate());
+                if (raw != null && raw.length > 0) syllable = SyllableCutter.cutLast(raw, ca.getSampleRate(), SyllableCutter.maxDur(text));
                 a = syllable != null ? ca : t.generateWithConfig(text, g);   // فشل الاقتطاع: نولّد المقطع وحده
             } else {
                 a = t.generateWithConfig(text, g);

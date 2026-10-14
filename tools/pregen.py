@@ -84,9 +84,16 @@ def syl_kind(c):
     return ""
 def syl_letter(c):  # الحرف الذي يجب أن يسمعه التحقق: في «أَبْ» هو الباء لا الهمزة
     return c[2] if RE_SUKUN.match(c) else ("\u0627" if c == "\u0622" else c[0])
-def carrier(c): return f"{c} ، ، {c} ، ، {c}"  # بلا كلمات تتسرب إلى الصوت؛ نأخذ المقطع الأخير
+def carriers(c):
+    """صيغ الجملة الحاملة (بلا أي كلمة تتسرب إلى الصوت). الأولى هي نفسها في EchoEngine/SyllableCutter؛
+    والبقية تُجرَّب عند تكرار المحاولة لأن إيقاعًا مختلفًا يغيّر نطق المقطع المنفرد."""
+    return [f"{c} ، ، {c} ، ، {c}", f"{c} . {c} . {c}", f"{c} ، {c} ، {c}", f"{c} {c} {c}", f"{c} ، ، ، {c} ، ، ، {c}"]
+def carrier(c): return carriers(c)[0]
 
-def cut_last(s, sr, gap_ms=90):
+def max_syl_dur(c): return 0.85 if syl_kind(c) == "madd" else 0.5   # أطول مدة معقولة لمقطع واحد
+
+def cut_last(s, sr, max_dur=0.9, gap_ms=90):
+    """يقتطع آخر مقطع. إن التصق مقطعان (عاعا) نقسمهما عند أعمق انخفاض في الطاقة ونأخذ الأخير. تطابق SyllableCutter.cutLast."""
     fr = int(sr * 0.01); n = len(s) // fr
     if n < 5: return s, False
     e = np.sqrt((s[:n * fr].reshape(n, fr) ** 2).mean(axis=1))
@@ -100,10 +107,37 @@ def cut_last(s, sr, gap_ms=90):
             gap += 1
             if gap * 10 >= gap_ms: break
         k -= 1
+    while (end + 1 - start) * 0.01 > max_dur:
+        best = -1
+        for i in range(start + 12, end - 11):
+            if e[i] <= e[i - 1] and e[i] <= e[i + 1] and (end - i) * 0.01 >= 0.12:
+                left = float(e[start:i].max()); right = float(e[i:end + 1].max())
+                if e[i] < 0.5 * min(left, right): best = i
+        if best < 0: break
+        start = best + 1
+        while start < end and not act[start]: start += 1
     a = max(0, start * fr - int(sr * 0.04)); b = min(len(s), (end + 1) * fr + int(sr * 0.12))
     seg = s[a:b].copy(); f = int(sr * 0.006)
     if len(seg) > 2 * f: seg[:f] *= np.linspace(0, 1, f).astype(np.float32); seg[-f:] *= np.linspace(1, 0, f).astype(np.float32)
-    return seg, (0.12 <= (end + 1 - start) * 0.01 <= 0.9)
+    return seg, (0.12 <= (end + 1 - start) * 0.01 <= max_dur)
+
+# حروف يخلط بينها السمع (ذ/د، ظ/ض، ح/ه/خ ...): ظهور الحرف الخطأ في التفريغ يُنقص الدرجة
+CONF = {"ذ": "دز", "ظ": "ضز", "ض": "ظد", "د": "ذ", "ز": "ذس", "ح": "هخ", "خ": "حغ", "ه": "حا", "ع": "اء", "ء": "عا", "غ": "خع",
+        "ث": "ست", "س": "صث", "ص": "س", "ط": "ت", "ت": "ط", "ق": "ك", "ك": "ق", "ش": "س", "ج": "ش", "ف": "ث"}
+def syl_score(c, heard):
+    """درجة التحقق لمقطع (يُنطق ثلاث مرات): عدد مرات سماع الحرف المقصود، مخصومًا منه الحرف المشتبه به؛ وللمد يجب أن يتبعه حرف المد."""
+    g = norm(heard).replace(" ", "")
+    if not g: return 0.0
+    L = norm(syl_letter(c)); cnt = g.count(L)
+    if L == "ا": sc = 1.0 if (cnt >= 3 and len(g) <= 10) else 0.5   # الهمزة/الألف: العدّ وحده لا يميّز
+    else:
+        conf = max([g.count(x) for x in CONF.get(L, "")] or [0])
+        sc = max(0.0, min(1.0, (cnt - 0.5 * conf) / 3.0))
+    if syl_kind(c) == "madd" and c != "\u0622":
+        v = norm(c[2])
+        if not re.search(re.escape(L) + v, g): sc *= 0.6
+    if len(g) > 14: sc *= 0.7   # كلام زائد (هلوسة) في التفريغ
+    return sc
 
 def score(expected, n, got):
     g = norm(got).replace(" ", "")
@@ -169,13 +203,14 @@ def work(voice):
         if key in index["items"] and os.path.exists(os.path.join(od, index["items"][key])): continue
         if DEADLINE and time.time() > DEADLINE: stopped = True; break
         best = None
-        for attempt in range(1, (a.tries if rec else 1) + 1):
+        syl = bool(syl_kind(c))
+        for attempt in range(1, ((max(a.tries, 10) if syl else a.tries) if rec else 1) + 1):
             g = sherpa_onnx.GenerationConfig(); g.sid = voice; g.speed = float(sp); g.num_steps = a.steps; g.extra = {"lang": "ar"}
             syl = bool(syl_kind(c))
-            vs = [carrier(c)] if syl else variants(c, num)
+            vs = carriers(c) if syl else variants(c, num)
             r = tts.generate(vs[(attempt - 1) % len(vs)], g)
             raw = np.asarray(r.samples, dtype=np.float32)
-            if syl: s, okdur = cut_last(raw, r.sample_rate)
+            if syl: s, okdur = cut_last(raw, r.sample_rate, max_syl_dur(c))
             else: s, okdur = trim(raw, r.sample_rate), True
             if r.sample_rate != 22050: s = resample_poly(s, 22050, r.sample_rate).astype(np.float32)
             if not rec: best = (s, 1.0, ""); break
@@ -183,7 +218,7 @@ def work(voice):
             if syl:
                 gp = np.zeros(int(22050 * 0.35), dtype=np.float32); heard = transcribe(np.concatenate([s, gp, s, gp, s]), 22050)
             else: heard = transcribe(s, 22050)
-            sc = (0.0 if not okdur else (1.0 if norm(syl_letter(c)) in norm(heard) else 0.5)) if syl else score(c, num, heard)
+            sc = (0.0 if not okdur else syl_score(c, heard)) if syl else score(c, num, heard)
             if best is None or sc > best[1]: best = (s, sc, heard)
             if sc >= a.accept: break
         s = best[0]

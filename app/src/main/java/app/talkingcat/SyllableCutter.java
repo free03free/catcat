@@ -22,8 +22,14 @@ final class SyllableCutter {
     // بلا أي كلمة («حرف»، «كرر»، «مد») كي لا تتسرب إلى الصوت: ثلاثة مقاطع بينها فواصل، ونأخذ الأخير
     static String carrier(String t) { return t + " ، ، " + t + " ، ، " + t; }
 
-    /** يقتطع آخر مقطع منطوق من الصوت؛ يعيد null إن لم تكن مدته معقولة (0.12–1.2 ث) فيُعاد التوليد بلا حامل. */
-    static float[] cutLast(float[] s, int sr) {
+    /** أطول مدة معقولة لمقطع واحد (ث): قصير 0.5، مد 0.85. */
+    static double maxDur(String t) { return isMadd(t) ? 0.85 : 0.5; }
+
+    static float[] cutLast(float[] s, int sr) { return cutLast(s, sr, 0.9); }
+
+    /** يقتطع آخر مقطع منطوق من الصوت. إن التصق مقطعان («عاعا») يُقسَمان عند أعمق انخفاض في الطاقة ويؤخذ الأخير.
+     *  يعيد null إن لم تكن المدة معقولة (0.12–maxDur) فيُعاد التوليد بلا حامل. يطابق cut_last في tools/pregen.py. */
+    static float[] cutLast(float[] s, int sr, double maxDur) {
         final int gapMs = 90;
         int fr = (int) (sr * 0.01);
         if (fr < 1) return null;
@@ -47,6 +53,20 @@ final class SyllableCutter {
             else { gap++; if (gap * 10 >= gapMs) break; }
             k--;
         }
+        while ((end + 1 - start) * 0.01 > maxDur) {
+            int best = -1;
+            for (int i = start + 12; i < end - 11; i++) {
+                if (e[i] <= e[i - 1] && e[i] <= e[i + 1] && (end - i) * 0.01 >= 0.12) {
+                    double left = 0, right = 0;
+                    for (int q = start; q < i; q++) left = Math.max(left, e[q]);
+                    for (int q = i; q <= end; q++) right = Math.max(right, e[q]);
+                    if (e[i] < 0.5 * Math.min(left, right)) best = i;
+                }
+            }
+            if (best < 0) break;
+            start = best + 1;
+            while (start < end && e[start] <= th) start++;
+        }
         int a = Math.max(0, start * fr - (int) (sr * 0.04));
         int b = Math.min(s.length, (end + 1) * fr + (int) (sr * 0.12));
         if (b <= a) return null;
@@ -60,6 +80,6 @@ final class SyllableCutter {
             }
         }
         double dur = (end + 1 - start) * 0.01;
-        return (dur >= 0.12 && dur <= 0.9) ? seg : null;
+        return (dur >= 0.12 && dur <= maxDur) ? seg : null;
     }
 }
